@@ -1,0 +1,6 @@
+# Tooling for tests and linting. Install alongside the backend/training
+# requirements:
+#   pip install -r backend/requirements.txt -r training/requirements.txt -r requirements-dev.txt
+pytest>=8.0
+httpx>=0.27
+ruff>=0.6

@@ -1,7 +1,10 @@
-torch
-torchvision
-pandas
-scikit-learn
-tqdm
-pillow
-matplotlib
+# Dependencies for training and evaluating the DR classifier.
+torch>=2.2,<3.0
+torchvision>=0.17,<1.0
+
+pandas>=2.0,<3.0
+scikit-learn>=1.4,<2.0
+numpy>=1.26,<3.0
+pillow>=10.0
+tqdm>=4.66
+matplotlib>=3.8,<4.0

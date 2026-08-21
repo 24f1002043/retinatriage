@@ -1,9 +1,13 @@
-fastapi
-uvicorn[standard]
-python-multipart
-torch
-torchvision
-pytorch-grad-cam
-pillow
-numpy
-opencv-python-headless
+# Runtime dependencies for the FastAPI inference server.
+fastapi>=0.115,<1.0
+uvicorn[standard]>=0.30,<1.0
+python-multipart>=0.0.9
+
+torch>=2.2,<3.0
+torchvision>=0.17,<1.0
+
+# Distributed on PyPI as "grad-cam"; imported as "pytorch_grad_cam".
+grad-cam>=1.5,<2.0
+pillow>=10.0
+numpy>=1.26,<3.0
+opencv-python-headless>=4.9,<5.0
