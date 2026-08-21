@@ -9,9 +9,9 @@ const STAGE_LABELS = [
   'Proliferative DR',
 ];
 
-const STAGE_COLORS = ['#10b981', '#f59e0b', '#f97316', '#ef4444', '#dc2626'];
-
-const API_URL = 'http://localhost:8000/predict';
+/* Override with VITE_API_BASE in .env to point at a deployed backend. */
+const API_BASE = import.meta.env.VITE_API_BASE ?? 'http://localhost:8000';
+const API_URL = `${API_BASE}/predict`;
 
 /* ─── Toast Component ─── */
 function Toast({ message, onClose }) {
@@ -113,7 +113,7 @@ export default function App() {
     } catch (err) {
       setError(
         err.message === 'Failed to fetch'
-          ? 'Cannot connect to backend. Is the server running on port 8000?'
+          ? `Cannot connect to the backend at ${API_BASE}. Is the server running?`
           : err.message,
       );
     } finally {
@@ -218,6 +218,13 @@ export default function App() {
               <p className="stage-confidence">
                 Confidence:{' '}
                 <strong>{(results.confidence * 100).toFixed(1)}%</strong>
+                {results.inference_ms != null && (
+                  <>
+                    {' · '}
+                    <strong>{Math.round(results.inference_ms)} ms</strong>
+                    {' inference'}
+                  </>
+                )}
               </p>
             </div>
 
