@@ -1,6 +1,6 @@
 <div align="center">
 
-# RetinaTriage 👁️
+# RetinaTriage 
 
 **Explainable diabetic retinopathy screening — ResNet50 staging with Grad-CAM, served end to end.**
 
