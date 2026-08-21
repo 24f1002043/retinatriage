@@ -1,0 +1,34 @@
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q --strict-markers"
+filterwarnings = [
+    # torchvision emits these for the pretrained-weights enum on some versions.
+    "ignore::UserWarning:torchvision.*",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py39"
+exclude = ["frontend", ".venv", "venv"]
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "F",   # pyflakes
+    "I",   # import sorting
+    "B",   # bugbear
+    "UP",  # pyupgrade
+]
+ignore = [
+    "B008",  # FastAPI's Depends/File(...) defaults are the documented idiom
+    "E501",  # long lines are caught by the formatter, not the linter
+]
+
+[tool.ruff.lint.isort]
+# backend/ and training/ are flat script directories, not installed packages,
+# so ruff needs to be told these module names are ours.
+known-first-party = ["config", "evaluate", "gradcam", "main", "model", "train"]
+
+[tool.ruff.lint.per-file-ignores]
+# Tests import inside functions on purpose, to keep sys.path setup in conftest.
+"tests/*" = ["E402"]
