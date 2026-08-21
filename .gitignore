@@ -7,9 +7,20 @@ venv/
 env/
 *.egg-info/
 
-# Model weights & data
+# Test & lint caches
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Model weights, datasets & training artifacts
 backend/weights/*.pth
 data/
+training/data/
+training/reports/
+reports/
+metrics.json
+eval_metrics.json
 *.zip
 kaggle.json
 
@@ -18,6 +29,11 @@ node_modules/
 frontend/dist/
 frontend/build/
 frontend/.vite/
+
+# Env files (keep .env.example tracked)
+.env
+.env.local
+.env.*.local
 
 # OS and editor files
 .DS_Store
