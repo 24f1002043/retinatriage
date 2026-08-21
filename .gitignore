@@ -21,6 +21,8 @@ training/reports/
 reports/
 metrics.json
 eval_metrics.json
+# ...but the published run's results are tracked as evidence for the README.
+!docs/results/*.json
 *.zip
 kaggle.json
 

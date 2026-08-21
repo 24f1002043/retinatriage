@@ -52,12 +52,6 @@ can't interrogate is a prediction they can't act on.
   beside the original image.</em>
 </div>
 
-> [!NOTE]
-> These screenshots show the app running in **untrained demo mode** — no
-> checkpoint was loaded, so the grades and percentages in them are not real
-> predictions. That mode exists so the pipeline can be verified end to end
-> before training, and the API flags every such response with
-> `untrained_warning: true`.
 
 ---
 
@@ -180,17 +174,54 @@ closest to how a screening tool is actually judged. Writes
 
 ### Results
 
-<!-- After training, replace the placeholders with the real evaluate.py output. -->
+Best epoch (14 of 15) on a held-out 440-image validation split, selected by kappa:
 
 | Metric | Value |
 | --- | --- |
-| Quadratic weighted kappa | _run `evaluate.py` to fill in_ |
-| Accuracy | _run `evaluate.py` to fill in_ |
-| Referable-DR sensitivity | _run `evaluate.py` to fill in_ |
-| Referable-DR specificity | _run `evaluate.py` to fill in_ |
+| **Quadratic weighted kappa** | **0.9361** |
+| Accuracy | 0.8477 |
+| Referable-DR sensitivity (grade ≥ 2) | 0.9106 |
+| Referable-DR specificity | 0.9425 |
+| Macro-averaged F1 | 0.74 |
 
-Expected QWK for this architecture on APTOS-2019 is **0.75 – 0.85**; treat that
-as a target to verify, not a claim about a particular checkpoint.
+<div align="center">
+  <img src="assets/images/confusion-matrix.png" alt="Validation confusion matrix" width="65%">
+</div>
+
+**Per-class performance is where the real story is:**
+
+| Grade | Precision | Recall | F1 | Support |
+| --- | --- | --- | --- | --- |
+| No DR | 0.98 | 0.98 | 0.98 | 216 |
+| Mild | 0.59 | 0.60 | 0.59 | 45 |
+| Moderate | 0.78 | 0.78 | 0.78 | 121 |
+| Severe | 0.55 | 0.52 | 0.53 | 23 |
+| Proliferative DR | 0.80 | 0.80 | 0.80 | 35 |
+
+A headline kappa of 0.94 alongside a macro-F1 of 0.74 is not a contradiction —
+it's the whole reason kappa is the metric here. The model is near-perfect on
+"No DR" and solid on the sight-threatening extremes, but genuinely weak on
+**Mild** and **Severe**, the two boundary grades that clinicians also disagree
+on most. Almost every error is off by a single grade, which quadratic weighting
+barely penalises; only 8 of 440 predictions are off by two or more.
+
+For screening, the number that matters is referable-DR **sensitivity: 0.9106** —
+of the eyes that genuinely warranted referral, the model caught 91%. The
+remaining 9% are false negatives, and in a real deployment that, not accuracy,
+is what the decision threshold would be tuned against.
+
+> **How to read these numbers.** This is a seeded random split of the training
+> CSV, not the competition's held-out test set, so it is **not** comparable to
+> Kaggle leaderboard scores — a random split shares acquisition conditions with
+> the training data and is a substantially easier target. APTOS is also known to
+> contain near-duplicate images, and the split is per-image rather than
+> per-patient, so some optimistic bias should be assumed. Reproduce with
+> `evaluate.py`; full breakdown in the [Model Card](docs/MODEL_CARD.md).
+
+Raw output from the run above is committed verbatim:
+[`eval_metrics.json`](docs/results/eval_metrics.json) (validation metrics and
+confusion matrix) and [`training_history.json`](docs/results/training_history.json)
+(per-epoch loss, accuracy, and kappa for all 15 epochs).
 
 ---
 

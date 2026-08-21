@@ -234,11 +234,18 @@ set `RETINATRIAGE_WEIGHTS` to point at it explicitly.
 
 ## Expected Results
 
-| Metric                          | Expected Range   |
-| ------------------------------- | ---------------- |
-| Validation quadratic weighted κ | **0.75 – 0.85**  |
-| Validation accuracy             | **70 – 80 %**    |
-| Training time (Colab T4)        | ~30 – 45 minutes |
+| Metric                          | Expected Range   | Achieved (seed 42) |
+| ------------------------------- | ---------------- | ------------------ |
+| Validation quadratic weighted κ | **0.75 – 0.85**  | **0.9361**         |
+| Validation accuracy             | **70 – 80 %**    | **84.8 %**         |
+| Training time (Colab T4)        | ~30 – 45 minutes | ~60 minutes        |
+
+The achieved column is a 15-epoch run on the `mariaherrerot/aptos2019` mirror's
+training portion, validated on a seeded 15 % split of it. That split is easier
+than the competition's held-out test set, so treat the figure as an in-domain
+validation result rather than a leaderboard-comparable score. See the
+[Model Card](../docs/MODEL_CARD.md) for the per-class breakdown, which is
+considerably less flattering than the headline kappa.
 
 > **Note:** Results vary with random seed and data shuffling.
 > The quadratic weighted kappa (QWK) is the primary metric — it accounts

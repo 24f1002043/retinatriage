@@ -56,11 +56,22 @@ explanation. Educational and portfolio use.
 ## 3. Training data
 
 [APTOS 2019 Blindness Detection](https://www.kaggle.com/competitions/aptos2019-blindness-detection)
-— 3,662 labelled fundus photographs collected by Aravind Eye Hospital in rural
-India, graded 0–4 by trained clinicians.
+— fundus photographs collected by Aravind Eye Hospital in rural India, graded
+0–4 by trained clinicians. The full competition training set is 3,662 images.
 
-**Split:** 85 % train / 15 % validation, stratified by grade, seeded at 42 so
-the split is reproducible by `evaluate.py`.
+This checkpoint was trained on the
+[`mariaherrerot/aptos2019`](https://www.kaggle.com/datasets/mariaherrerot/aptos2019)
+community re-upload, which is **pre-split** into train/validation/test. Only its
+training portion was used: **2,930 images**, distributed as
+
+| Grade | 0 | 1 | 2 | 3 | 4 |
+| --- | --- | --- | --- | --- | --- |
+| Images | 1,434 | 300 | 808 | 154 | 234 |
+
+**Split:** that 2,930 was further divided 85 % train / 15 % validation (2,490 /
+440), stratified by grade and seeded at 42, so `evaluate.py` reproduces the
+identical split. The mirror's own validation and test partitions were left
+untouched — they remain available as a genuinely unseen evaluation set.
 
 **Augmentation (train only):** horizontal and vertical flips, ±20° rotation,
 brightness/contrast/saturation jitter at 0.2.
@@ -103,17 +114,61 @@ rebuilding the exact validation split from the seed.
 
 ### Results
 
-<!-- Replace this block with the real output of evaluate.py after training. -->
+Checkpoint from epoch 14 of 15, selected on validation kappa. Validation set:
+440 images held out from the 2,930-image training CSV, stratified, seed 42.
 
 | Metric | Value |
 | --- | --- |
-| Quadratic weighted kappa | _run `evaluate.py` to fill in_ |
-| Accuracy | _run `evaluate.py` to fill in_ |
-| Referable-DR sensitivity (grade ≥ 2) | _run `evaluate.py` to fill in_ |
-| Referable-DR specificity | _run `evaluate.py` to fill in_ |
+| **Quadratic weighted kappa** | **0.9361** |
+| Accuracy | 0.8477 |
+| Macro-averaged F1 | 0.74 |
+| Referable-DR sensitivity (grade ≥ 2) | 0.9106 |
+| Referable-DR specificity | 0.9425 |
 
-Typical QWK for this architecture and dataset lands in the **0.75 – 0.85** range;
-treat that as an expectation to verify, not a claim about this checkpoint.
+**Per class**
+
+| Grade | Precision | Recall | F1 | Support |
+| --- | --- | --- | --- | --- |
+| 0 — No DR | 0.98 | 0.98 | 0.98 | 216 |
+| 1 — Mild | 0.59 | 0.60 | 0.59 | 45 |
+| 2 — Moderate | 0.78 | 0.78 | 0.78 | 121 |
+| 3 — Severe | 0.55 | 0.52 | 0.53 | 23 |
+| 4 — Proliferative DR | 0.80 | 0.80 | 0.80 | 35 |
+
+**Confusion matrix** (rows = true, columns = predicted)
+
+| | 0 | 1 | 2 | 3 | 4 |
+| --- | --- | --- | --- | --- | --- |
+| **0** | 212 | 4 | 0 | 0 | 0 |
+| **1** | 3 | 27 | 15 | 0 | 0 |
+| **2** | 1 | 15 | 94 | 5 | 6 |
+| **3** | 0 | 0 | 10 | 12 | 1 |
+| **4** | 0 | 0 | 2 | 5 | 28 |
+
+### Interpreting these results honestly
+
+- **The gap between kappa (0.94) and macro-F1 (0.74) is the real finding.**
+  Performance is not uniform: near-perfect on "No DR", weak on **Mild** (F1 0.59)
+  and **Severe** (F1 0.53). Those two grades are also where human graders
+  disagree most, and both have small support (45 and 23 images), so their
+  metrics carry wide error bars.
+- **Errors are overwhelmingly adjacent-grade.** Only 8 of 440 predictions are
+  off by two or more grades. Quadratic weighting is designed to treat those
+  small ordinal slips leniently, which is why kappa is high while per-class F1
+  is not. Reporting kappa alone would overstate the model.
+- **Not comparable to Kaggle leaderboard scores.** This is a random seeded split
+  of the training CSV. The competition's private test set was drawn to include
+  distribution shift; a random validation split shares acquisition conditions
+  with the training data and is a materially easier target. Do not read 0.9361
+  as competition-grade performance.
+- **Assume some optimistic bias.** APTOS is documented to contain near-duplicate
+  images, and the split is per-image rather than per-patient. Either can leak
+  information across the split. The magnitude is unmeasured.
+- **The failure mode that matters is the 9% of referable eyes missed.**
+  Sensitivity 0.9106 means roughly 1 in 11 eyes needing referral was graded
+  below the referral threshold. In a screening context, that is the number to
+  optimise, not accuracy — and the argmax decision rule used here is not tuned
+  for it.
 
 ---
 
