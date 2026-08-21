@@ -40,16 +40,17 @@ can't interrogate is a prediction they can't act on.
 <br>
 
 <div align="center">
-  <img src="assets/images/02-upload-preview.png" alt="Fundus image loaded, ready to analyse" width="85%">
-  <br><em>The image previews before analysis, then the predicted grade and confidence appear inline.</em>
+  <img src="assets/images/02-upload-preview.png" alt="Fundus image graded as Stage 4 with 99.6% confidence" width="85%">
+  <br><em>A held-out grade-4 eye, correctly graded <strong>Stage 4 — Proliferative DR</strong>
+  at 99.6% confidence in 667 ms.</em>
 </div>
 
 <br>
 
 <div align="center">
-  <img src="assets/images/04-results-panel.png" alt="Prediction results with Grad-CAM overlay" width="85%">
-  <br><em>Every prediction returns the full class distribution and a Grad-CAM overlay
-  beside the original image.</em>
+  <img src="assets/images/04-results-panel.png" alt="Class probabilities and Grad-CAM overlay for the same eye" width="85%">
+  <br><em>The same prediction in full: the distribution across all five grades, and the
+  Grad-CAM overlay marking the regions that drove it.</em>
 </div>
 
 
