@@ -40,6 +40,9 @@ from train import (
     NUM_CLASSES,
     RetinopathyDataset,
     build_model,
+    configure_console,
+    normalise_columns,
+    resolve_dataset,
     set_seed,
     stratified_split,
     val_transform,
@@ -138,7 +141,7 @@ def save_confusion_matrix_png(cm: np.ndarray, out_path: Path) -> bool:
         matplotlib.use("Agg")  # headless — works in CI and over SSH
         import matplotlib.pyplot as plt
     except ImportError:
-        print("matplotlib not installed — skipping the confusion-matrix PNG.")
+        print("matplotlib not installed; skipping the confusion-matrix PNG.")
         return False
 
     # Row-normalise so the rare classes stay readable next to the huge class 0.
@@ -177,7 +180,11 @@ def save_confusion_matrix_png(cm: np.ndarray, out_path: Path) -> bool:
 def main():
     parser = argparse.ArgumentParser(description="Evaluate a RetinaTriage checkpoint")
     parser.add_argument("--data_dir", type=str, required=True,
-                        help="Path to the data/ directory containing train.csv and train_images/")
+                        help="Path to the data/ directory containing the CSV and image folder")
+    parser.add_argument("--csv", type=str, default=None,
+                        help="Labels CSV (default: auto-detect; must match training)")
+    parser.add_argument("--images_dir", type=str, default=None,
+                        help="Image folder (default: auto-detect; must match training)")
     parser.add_argument("--weights", type=str, required=True,
                         help="Path to the trained checkpoint (.pth)")
     parser.add_argument("--out_dir", type=str, default="reports",
@@ -191,6 +198,7 @@ def main():
                         help="Must match the seed used during training to reproduce the split")
     args = parser.parse_args()
 
+    configure_console()
     set_seed(args.seed)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Using device: {device}")
@@ -198,12 +206,12 @@ def main():
     # ------------------------------------------------------------------
     # Rebuild the exact validation split train.py used
     # ------------------------------------------------------------------
-    data_dir = Path(args.data_dir)
-    df = pd.read_csv(data_dir / "train.csv")
+    csv_path, images_dir = resolve_dataset(args.data_dir, args.csv, args.images_dir)
+    df = normalise_columns(pd.read_csv(csv_path), csv_path)
     _, val_df = stratified_split(df, args.val_size, args.seed)
     print(f"Validation samples: {len(val_df)}")
 
-    val_ds = RetinopathyDataset(val_df, str(data_dir / "train_images"), transform=val_transform)
+    val_ds = RetinopathyDataset(val_df, str(images_dir), transform=val_transform)
     val_loader = DataLoader(val_ds, batch_size=args.batch_size, shuffle=False,
                             num_workers=args.num_workers, pin_memory=True)
 

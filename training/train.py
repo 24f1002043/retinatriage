@@ -19,6 +19,7 @@ import argparse
 import json
 import os
 import random
+import sys
 from pathlib import Path
 
 import numpy as np
@@ -46,6 +47,118 @@ IMAGENET_STD = [0.229, 0.224, 0.225]
 
 # APTOS ships PNGs, but community mirrors sometimes re-encode as JPEG.
 _IMAGE_EXTENSIONS = (".png", ".jpg", ".jpeg")
+
+# The official competition download uses train.csv + train_images/. Community
+# re-uploads of the same data (e.g. the mariaherrerot/aptos2019 mirror, which
+# needs no competition sign-up) rename these and often pre-split the data, so
+# the names below are searched in order and can always be overridden with
+# --csv / --images_dir.
+_CSV_CANDIDATES = ("train.csv", "train_1.csv", "labels.csv", "trainLabels.csv")
+_IMAGE_DIR_CANDIDATES = ("train_images", "train", "images")
+
+# Column names the loader needs, and known aliases used by mirrors.
+_ID_COLUMN_ALIASES = ("id_code", "image", "image_id", "id")
+_LABEL_COLUMN_ALIASES = ("diagnosis", "level", "label")
+
+
+# ---------------------------------------------------------------------------
+# Console
+# ---------------------------------------------------------------------------
+
+def configure_console() -> None:
+    """Let stdout/stderr survive non-ASCII on legacy Windows code pages.
+
+    A Windows console defaults to cp1252, which cannot encode characters like
+    an em dash. Printing one raises UnicodeEncodeError, and because the worst
+    offender was the "best model saved" line, a training run could crash at the
+    end of an epoch after all the actual work was done.
+    """
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            stream.reconfigure(encoding="utf-8", errors="replace")
+        except (AttributeError, OSError, ValueError):
+            # Not a reconfigurable text stream (e.g. redirected/captured) —
+            # output is already being handled by something else.
+            pass
+
+
+# ---------------------------------------------------------------------------
+# Dataset layout discovery
+# ---------------------------------------------------------------------------
+
+def _describe_dir(path: Path, limit: int = 25) -> str:
+    """List a directory's contents, for use in error messages."""
+    if not path.is_dir():
+        return f"    (no such directory: {path})"
+    entries = sorted(path.iterdir())
+    shown = [f"    {e.name}{'/' if e.is_dir() else ''}" for e in entries[:limit]]
+    if len(entries) > limit:
+        shown.append(f"    ... and {len(entries) - limit} more")
+    return "\n".join(shown) or "    (empty)"
+
+
+def resolve_dataset(data_dir: str, csv: str = None, images_dir: str = None):
+    """Locate the labels CSV and the image directory inside ``data_dir``.
+
+    Falls back through the known layouts, and on failure prints what is
+    actually there so the right --csv / --images_dir can be passed.
+    """
+    root = Path(data_dir)
+
+    if csv:
+        csv_path = Path(csv)
+        if not csv_path.is_file():
+            raise SystemExit(f"--csv not found: {csv_path}")
+    else:
+        csv_path = next(
+            (root / name for name in _CSV_CANDIDATES if (root / name).is_file()), None
+        )
+        if csv_path is None:
+            raise SystemExit(
+                f"Could not find a labels CSV in {root}.\n"
+                f"  Looked for: {', '.join(_CSV_CANDIDATES)}\n"
+                f"  Directory contains:\n{_describe_dir(root)}\n"
+                f"  Pass the right file explicitly with --csv."
+            )
+
+    if images_dir:
+        images_path = Path(images_dir)
+        if not images_path.is_dir():
+            raise SystemExit(f"--images_dir not found: {images_path}")
+    else:
+        images_path = next(
+            (root / name for name in _IMAGE_DIR_CANDIDATES if (root / name).is_dir()), None
+        )
+        if images_path is None:
+            raise SystemExit(
+                f"Could not find an image directory in {root}.\n"
+                f"  Looked for: {', '.join(_IMAGE_DIR_CANDIDATES)}\n"
+                f"  Directory contains:\n{_describe_dir(root)}\n"
+                f"  Pass the right folder explicitly with --images_dir."
+            )
+
+    return csv_path, images_path
+
+
+def normalise_columns(df: pd.DataFrame, csv_path: Path) -> pd.DataFrame:
+    """Rename a mirror's column names to the id_code/diagnosis pair we expect."""
+    id_col = next((c for c in _ID_COLUMN_ALIASES if c in df.columns), None)
+    label_col = next((c for c in _LABEL_COLUMN_ALIASES if c in df.columns), None)
+
+    if id_col is None or label_col is None:
+        raise SystemExit(
+            f"{csv_path} does not have the expected columns.\n"
+            f"  Need an id column ({' / '.join(_ID_COLUMN_ALIASES)}) "
+            f"and a label column ({' / '.join(_LABEL_COLUMN_ALIASES)}).\n"
+            f"  Found: {list(df.columns)}"
+        )
+
+    renamed = df.rename(columns={id_col: "id_code", label_col: "diagnosis"})
+    # Mirrors sometimes store the filename with its extension already attached.
+    renamed["id_code"] = renamed["id_code"].astype(str).str.replace(
+        r"\.(png|jpg|jpeg)$", "", regex=True, case=False
+    )
+    return renamed
 
 
 # ---------------------------------------------------------------------------
@@ -165,7 +278,7 @@ def stratified_split(df: pd.DataFrame, test_size: float, seed: int):
             df, test_size=test_size, random_state=seed, stratify=df["diagnosis"]
         )
     except ValueError:
-        print("  ! Too few samples per class to stratify — using a random split.")
+        print("  ! Too few samples per class to stratify; using a random split.")
         return train_test_split(df, test_size=test_size, random_state=seed)
 
 
@@ -252,7 +365,11 @@ def print_confusion_matrix(labels: np.ndarray, preds: np.ndarray) -> np.ndarray:
 def main():
     parser = argparse.ArgumentParser(description="Train RetinaTriage DR classifier")
     parser.add_argument("--data_dir", type=str, required=True,
-                        help="Path to the data/ directory containing train.csv and train_images/")
+                        help="Path to the data/ directory containing the CSV and image folder")
+    parser.add_argument("--csv", type=str, default=None,
+                        help="Labels CSV (default: auto-detect train.csv/train_1.csv in --data_dir)")
+    parser.add_argument("--images_dir", type=str, default=None,
+                        help="Image folder (default: auto-detect train_images/train in --data_dir)")
     parser.add_argument("--epochs", type=int, default=15, help="Number of training epochs")
     parser.add_argument("--batch_size", type=int, default=32, help="Batch size")
     parser.add_argument("--lr", type=float, default=1e-4, help="Learning rate")
@@ -266,6 +383,8 @@ def main():
     parser.add_argument("--smoke_test", action="store_true",
                         help="Quick sanity check: 100 images, 1 epoch")
     args = parser.parse_args()
+
+    configure_console()
 
     # ------------------------------------------------------------------
     # Smoke test override
@@ -285,10 +404,11 @@ def main():
     # ------------------------------------------------------------------
     # Load CSV & split
     # ------------------------------------------------------------------
-    csv_path = os.path.join(args.data_dir, "train.csv")
-    images_dir = os.path.join(args.data_dir, "train_images")
+    csv_path, images_dir = resolve_dataset(args.data_dir, args.csv, args.images_dir)
+    print(f"Labels CSV : {csv_path}")
+    print(f"Images dir : {images_dir}")
 
-    df = pd.read_csv(csv_path)
+    df = normalise_columns(pd.read_csv(csv_path), csv_path)
     if args.smoke_test:
         df = df.head(100)
 
@@ -383,7 +503,7 @@ def main():
                 },
                 str(out_path),
             )
-            print(f"  ✓ Best model saved → {out_path}")
+            print(f"  [best] saved -> {out_path}")
 
     # ------------------------------------------------------------------
     # Final report on the best epoch

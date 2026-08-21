@@ -31,6 +31,36 @@ pip install -r requirements.txt
 2. Scroll to the **API** section → click **Create New API Token**
 3. This downloads a `kaggle.json` file — keep it safe
 
+### 2a-alt. Or skip the competition entirely
+
+Joining the competition is only needed for the official download. A community
+re-upload of the same data works without it and is a single command:
+
+```bash
+kaggle datasets download -d mariaherrerot/aptos2019
+unzip aptos2019.zip -d data/
+```
+
+Mirrors rename things — `train_1.csv` instead of `train.csv`, `train/` instead
+of `train_images/`, JPEG instead of PNG, `image`/`level` column headers instead
+of `id_code`/`diagnosis`. `train.py` and `evaluate.py` detect all of those
+automatically. If a layout still isn't recognised, the error lists what is
+actually in the directory so you can point at it directly:
+
+```bash
+python train.py --data_dir data/ --csv data/train_1.csv --images_dir data/train --out ../backend/weights/model.pth
+```
+
+Check what you got before training:
+
+```bash
+python -c "import pathlib; print([p.name for p in pathlib.Path('data').iterdir()])"
+```
+
+> Whatever layout you train on, pass the **same** `--csv`, `--images_dir`,
+> `--seed`, and `--val_size` to `evaluate.py`, or it will rebuild a different
+> split and report on data the model has already seen.
+
 ### 2b. Accept the competition rules
 
 > **Important:** You **must** visit
@@ -89,6 +119,8 @@ This uses only 100 images for 1 epoch — takes under a minute on any machine.
 | Argument        | Default              | Description                                          |
 | --------------- | -------------------- | ---------------------------------------------------- |
 | `--data_dir`    | *(required)*         | Path to the `data/` directory                        |
+| `--csv`         | auto-detect          | Labels CSV, if the layout isn't recognised           |
+| `--images_dir`  | auto-detect          | Image folder, if the layout isn't recognised         |
 | `--epochs`      | `15`                 | Number of training epochs                            |
 | `--batch_size`  | `32`                 | Batch size                                           |
 | `--lr`          | `1e-4`               | Learning rate (Adam)                                 |

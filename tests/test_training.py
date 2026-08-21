@@ -144,3 +144,95 @@ def test_inference_preprocessing_matches_the_validation_transform():
 
     assert from_backend.shape == (1, 3, 224, 224)
     assert torch.allclose(from_backend, from_training, atol=1e-6)
+
+
+# ---------------------------------------------------------------------------
+# Dataset layout discovery (the official download vs community mirrors)
+# ---------------------------------------------------------------------------
+
+def _make_layout(root, csv_name, images_name, columns=("id_code", "diagnosis")):
+    """Create a minimal dataset tree and return its root."""
+    (root / images_name).mkdir(parents=True)
+    header = ",".join(columns)
+    (root / csv_name).write_text(f"{header}\nabc123,2\ndef456,0\n", encoding="utf-8")
+    return root
+
+
+def test_official_competition_layout_is_detected(tmp_path):
+    from train import resolve_dataset
+
+    _make_layout(tmp_path, "train.csv", "train_images")
+    csv_path, images_dir = resolve_dataset(str(tmp_path))
+
+    assert csv_path.name == "train.csv"
+    assert images_dir.name == "train_images"
+
+
+def test_mirror_layout_is_detected(tmp_path):
+    from train import resolve_dataset
+
+    # Community re-uploads commonly ship train_1.csv alongside a train/ folder.
+    _make_layout(tmp_path, "train_1.csv", "train")
+    csv_path, images_dir = resolve_dataset(str(tmp_path))
+
+    assert csv_path.name == "train_1.csv"
+    assert images_dir.name == "train"
+
+
+def test_explicit_overrides_win_over_detection(tmp_path):
+    from train import resolve_dataset
+
+    _make_layout(tmp_path, "train.csv", "train_images")
+    (tmp_path / "custom").mkdir()
+    (tmp_path / "other.csv").write_text("id_code,diagnosis\nx,1\n", encoding="utf-8")
+
+    csv_path, images_dir = resolve_dataset(
+        str(tmp_path), csv=str(tmp_path / "other.csv"), images_dir=str(tmp_path / "custom")
+    )
+
+    assert csv_path.name == "other.csv"
+    assert images_dir.name == "custom"
+
+
+def test_unrecognised_layout_reports_what_is_actually_there(tmp_path):
+    import pytest as _pytest
+
+    from train import resolve_dataset
+
+    (tmp_path / "surprise_folder").mkdir()
+    (tmp_path / "notes.txt").write_text("hi", encoding="utf-8")
+
+    with _pytest.raises(SystemExit) as excinfo:
+        resolve_dataset(str(tmp_path))
+
+    message = str(excinfo.value)
+    # The error has to name the real contents, or the user cannot guess --csv.
+    assert "surprise_folder" in message
+    assert "--csv" in message
+
+
+def test_mirror_column_names_are_normalised(tmp_path):
+    import pandas as _pd
+
+    from train import normalise_columns
+
+    df = _pd.DataFrame({"image": ["abc123.png", "def456.png"], "level": [2, 0]})
+    out = normalise_columns(df, tmp_path / "train.csv")
+
+    assert list(out.columns) == ["id_code", "diagnosis"]
+    # Extensions are stripped so _resolve_path can try each one itself.
+    assert list(out["id_code"]) == ["abc123", "def456"]
+
+
+def test_missing_label_column_is_reported_with_the_real_columns(tmp_path):
+    import pandas as _pd
+    import pytest as _pytest
+
+    from train import normalise_columns
+
+    df = _pd.DataFrame({"id_code": ["abc"], "something_else": [1]})
+
+    with _pytest.raises(SystemExit) as excinfo:
+        normalise_columns(df, tmp_path / "train.csv")
+
+    assert "something_else" in str(excinfo.value)
