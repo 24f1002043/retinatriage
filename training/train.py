@@ -17,7 +17,6 @@ Usage:
 
 import argparse
 import json
-import os
 import random
 import sys
 from pathlib import Path
@@ -45,8 +44,9 @@ IMAGE_SIZE = 224
 IMAGENET_MEAN = [0.485, 0.456, 0.406]
 IMAGENET_STD = [0.229, 0.224, 0.225]
 
-# APTOS ships PNGs, but community mirrors sometimes re-encode as JPEG.
-_IMAGE_EXTENSIONS = (".png", ".jpg", ".jpeg")
+# APTOS ships PNGs, but community mirrors re-encode to JPEG and occasionally
+# to other formats, so the index accepts anything Pillow reads comfortably.
+_IMAGE_EXTENSIONS = (".png", ".jpg", ".jpeg", ".tif", ".tiff", ".bmp", ".webp")
 
 # The official competition download uses train.csv + train_images/. Community
 # re-uploads of the same data (e.g. the mariaherrerot/aptos2019 mirror, which
@@ -140,6 +140,43 @@ def resolve_dataset(data_dir: str, csv: str = None, images_dir: str = None):
     return csv_path, images_path
 
 
+def check_image_coverage(df: pd.DataFrame, image_index: dict, images_dir, data_root=None) -> None:
+    """Fail immediately if the CSV's ids don't match the images on disk.
+
+    Without this the mismatch only surfaces once training starts, inside a
+    DataLoader worker, several minutes and one ResNet50 download later.
+    """
+    ids = [str(i).strip().lower() for i in df["id_code"]]
+    missing = [i for i in ids if i not in image_index]
+    if not missing:
+        return
+
+    lines = [
+        f"{len(missing)} of {len(ids)} ids from the CSV have no image under {images_dir}.",
+        f"  Example missing ids : {missing[:3]}",
+        f"  Images indexed      : {len(image_index)}",
+    ]
+    sample_files = sorted(image_index)[:3]
+    if sample_files:
+        lines.append(f"  Example image stems : {sample_files}")
+
+    # A mirror that pre-splits the data pairs each CSV with its own folder, so
+    # the ids probably live in a sibling directory. Point at the right one.
+    if data_root is not None:
+        for sibling in sorted(Path(data_root).iterdir()):
+            if not sibling.is_dir() or str(sibling) == str(images_dir):
+                continue
+            found = sum(1 for i in ids[:200] if i in build_image_index(sibling))
+            if found:
+                lines.append(
+                    f"  -> {sibling} contains {found}/{min(200, len(ids))} of the "
+                    f"sampled ids. Pass --images_dir {sibling}"
+                )
+
+    lines.append("  Pass the matching folder with --images_dir (and CSV with --csv).")
+    raise SystemExit("\n".join(lines))
+
+
 def normalise_columns(df: pd.DataFrame, csv_path: Path) -> pd.DataFrame:
     """Rename a mirror's column names to the id_code/diagnosis pair we expect."""
     id_col = next((c for c in _ID_COLUMN_ALIASES if c in df.columns), None)
@@ -180,26 +217,47 @@ def set_seed(seed: int) -> None:
 # Dataset
 # ---------------------------------------------------------------------------
 
+def build_image_index(images_dir) -> dict:
+    """Map every image's lowercased filename stem to its full path.
+
+    Built once and searched recursively, so it copes with mirrors that nest
+    images in a subfolder, use unexpected extensions, or vary in letter case —
+    none of which a fixed ``id_code + ".png"`` join would find.
+    """
+    index = {}
+    for path in Path(images_dir).rglob("*"):
+        if path.is_file() and path.suffix.lower() in _IMAGE_EXTENSIONS:
+            # First match wins, so a duplicate deeper in the tree can't shadow
+            # the shallower one.
+            index.setdefault(path.stem.lower(), str(path))
+    return index
+
+
 class RetinopathyDataset(Dataset):
     """Loads retinal fundus images by id_code from a directory of images."""
 
-    def __init__(self, dataframe: pd.DataFrame, images_dir: str, transform=None):
+    def __init__(self, dataframe: pd.DataFrame, images_dir: str, transform=None,
+                 image_index: dict = None):
         self.df = dataframe.reset_index(drop=True)
         self.images_dir = images_dir
         self.transform = transform
+        # Sharing a prebuilt index avoids re-walking the tree per split, and
+        # keeps each DataLoader worker from doing the same scan again.
+        self.image_index = (
+            image_index if image_index is not None else build_image_index(images_dir)
+        )
 
     def __len__(self):
         return len(self.df)
 
     def _resolve_path(self, id_code: str) -> str:
-        for ext in _IMAGE_EXTENSIONS:
-            candidate = os.path.join(self.images_dir, f"{id_code}{ext}")
-            if os.path.isfile(candidate):
-                return candidate
-        raise FileNotFoundError(
-            f"No image for id_code {id_code} in {self.images_dir} "
-            f"(tried extensions: {', '.join(_IMAGE_EXTENSIONS)})"
-        )
+        path = self.image_index.get(str(id_code).strip().lower())
+        if path is None:
+            raise FileNotFoundError(
+                f"No image for id_code {id_code!r} under {self.images_dir}. "
+                f"The index holds {len(self.image_index)} images."
+            )
+        return path
 
     def __getitem__(self, idx):
         row = self.df.iloc[idx]
@@ -412,6 +470,10 @@ def main():
     if args.smoke_test:
         df = df.head(100)
 
+    image_index = build_image_index(images_dir)
+    check_image_coverage(df, image_index, images_dir, data_root=args.data_dir)
+    print(f"Images indexed: {len(image_index)}")
+
     print(f"Total samples: {len(df)}")
     print(f"Label distribution:\n{df['diagnosis'].value_counts().sort_index()}\n")
 
@@ -421,8 +483,10 @@ def main():
     # ------------------------------------------------------------------
     # Datasets & loaders
     # ------------------------------------------------------------------
-    train_ds = RetinopathyDataset(train_df, images_dir, transform=train_transform)
-    val_ds = RetinopathyDataset(val_df, images_dir, transform=val_transform)
+    train_ds = RetinopathyDataset(train_df, images_dir, transform=train_transform,
+                                  image_index=image_index)
+    val_ds = RetinopathyDataset(val_df, images_dir, transform=val_transform,
+                                image_index=image_index)
 
     train_loader = DataLoader(train_ds, batch_size=args.batch_size, shuffle=True,
                               num_workers=args.num_workers, pin_memory=True)

@@ -236,3 +236,115 @@ def test_missing_label_column_is_reported_with_the_real_columns(tmp_path):
         normalise_columns(df, tmp_path / "train.csv")
 
     assert "something_else" in str(excinfo.value)
+
+
+# ---------------------------------------------------------------------------
+# Image lookup: nesting, extensions, and case
+# ---------------------------------------------------------------------------
+
+def _touch_image(path):
+    from PIL import Image
+
+    path.parent.mkdir(parents=True, exist_ok=True)
+    Image.new("RGB", (8, 8), (120, 60, 30)).save(path)
+
+
+def test_index_finds_images_nested_in_subfolders(tmp_path):
+    from train import build_image_index
+
+    # Some mirrors ship train_images/train_images/<id>.png after unzipping.
+    _touch_image(tmp_path / "train_images" / "inner" / "abc123.png")
+
+    index = build_image_index(tmp_path / "train_images")
+
+    assert "abc123" in index
+
+
+def test_index_is_case_insensitive_on_id_and_extension(tmp_path):
+    from train import build_image_index
+
+    _touch_image(tmp_path / "AbC123.PNG")
+
+    index = build_image_index(tmp_path)
+
+    assert "abc123" in index
+
+
+def test_index_covers_every_supported_extension(tmp_path):
+    from train import build_image_index
+
+    for i, ext in enumerate([".png", ".jpg", ".jpeg", ".bmp"]):
+        _touch_image(tmp_path / f"img{i}{ext}")
+
+    assert len(build_image_index(tmp_path)) == 4
+
+
+def test_dataset_loads_an_image_whose_extension_differs_from_the_csv(tmp_path):
+    import pandas as _pd
+
+    from train import RetinopathyDataset
+
+    _touch_image(tmp_path / "abc123.jpg")
+    df = _pd.DataFrame({"id_code": ["abc123"], "diagnosis": [3]})
+
+    image, label = RetinopathyDataset(df, str(tmp_path))[0]
+
+    assert label == 3
+    assert image.size == (8, 8)
+
+
+# ---------------------------------------------------------------------------
+# Fail-fast coverage check
+# ---------------------------------------------------------------------------
+
+def test_coverage_check_passes_when_every_id_resolves(tmp_path):
+    import pandas as _pd
+
+    from train import build_image_index, check_image_coverage
+
+    _touch_image(tmp_path / "imgs" / "abc123.png")
+    df = _pd.DataFrame({"id_code": ["abc123"], "diagnosis": [1]})
+
+    # Must not raise.
+    check_image_coverage(df, build_image_index(tmp_path / "imgs"), tmp_path / "imgs")
+
+
+def test_coverage_check_names_the_sibling_folder_holding_the_images(tmp_path):
+    import pandas as _pd
+    import pytest as _pytest
+
+    from train import build_image_index, check_image_coverage
+
+    # The mirror pre-splits: the CSV's ids live in val_images, not train_images.
+    _touch_image(tmp_path / "train_images" / "other.png")
+    _touch_image(tmp_path / "val_images" / "abc123.png")
+    df = _pd.DataFrame({"id_code": ["abc123"], "diagnosis": [1]})
+
+    with _pytest.raises(SystemExit) as excinfo:
+        check_image_coverage(
+            df,
+            build_image_index(tmp_path / "train_images"),
+            tmp_path / "train_images",
+            data_root=tmp_path,
+        )
+
+    message = str(excinfo.value)
+    assert "val_images" in message
+    assert "--images_dir" in message
+
+
+def test_coverage_check_reports_counts_and_examples(tmp_path):
+    import pandas as _pd
+    import pytest as _pytest
+
+    from train import build_image_index, check_image_coverage
+
+    _touch_image(tmp_path / "imgs" / "present.png")
+    df = _pd.DataFrame({"id_code": ["present", "absent"], "diagnosis": [0, 1]})
+
+    with _pytest.raises(SystemExit) as excinfo:
+        check_image_coverage(df, build_image_index(tmp_path / "imgs"), tmp_path / "imgs")
+
+    message = str(excinfo.value)
+    assert "1 of 2" in message
+    assert "absent" in message

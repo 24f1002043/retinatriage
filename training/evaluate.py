@@ -39,7 +39,9 @@ from train import (
     CLASS_NAMES,
     NUM_CLASSES,
     RetinopathyDataset,
+    build_image_index,
     build_model,
+    check_image_coverage,
     configure_console,
     normalise_columns,
     resolve_dataset,
@@ -208,10 +210,14 @@ def main():
     # ------------------------------------------------------------------
     csv_path, images_dir = resolve_dataset(args.data_dir, args.csv, args.images_dir)
     df = normalise_columns(pd.read_csv(csv_path), csv_path)
-    _, val_df = stratified_split(df, args.val_size, args.seed)
-    print(f"Validation samples: {len(val_df)}")
+    image_index = build_image_index(images_dir)
+    check_image_coverage(df, image_index, images_dir, data_root=args.data_dir)
 
-    val_ds = RetinopathyDataset(val_df, str(images_dir), transform=val_transform)
+    _, val_df = stratified_split(df, args.val_size, args.seed)
+    print(f"Validation samples: {len(val_df)}  |  images indexed: {len(image_index)}")
+
+    val_ds = RetinopathyDataset(val_df, str(images_dir), transform=val_transform,
+                                image_index=image_index)
     val_loader = DataLoader(val_ds, batch_size=args.batch_size, shuffle=False,
                             num_workers=args.num_workers, pin_memory=True)
 
