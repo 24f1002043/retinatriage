@@ -1,0 +1,8 @@
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+Dockerfile
+.dockerignore
+# The trained checkpoint is mounted at runtime, not baked into the image.
+weights/*.pth
