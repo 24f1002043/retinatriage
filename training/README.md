@@ -8,7 +8,7 @@ dataset (5 classes: No DR → Proliferative DR).
 
 ## Prerequisites
 
-- **Python 3.8+**
+- **Python 3.9+**
 - **NVIDIA GPU recommended** — training on CPU is very slow
 - **Kaggle account** — required to download the competition dataset
 
@@ -86,14 +86,29 @@ This uses only 100 images for 1 epoch — takes under a minute on any machine.
 
 ### All CLI arguments
 
-| Argument       | Default              | Description                                  |
-| -------------- | -------------------- | -------------------------------------------- |
-| `--data_dir`   | *(required)*         | Path to the `data/` directory                |
-| `--epochs`     | `15`                 | Number of training epochs                    |
-| `--batch_size` | `32`                 | Batch size                                   |
-| `--lr`         | `1e-4`               | Learning rate (Adam)                         |
-| `--out`        | `weights/model.pth`  | Where to save the best model weights         |
-| `--smoke_test` | off                  | Quick sanity run: 100 images, 1 epoch        |
+| Argument        | Default              | Description                                          |
+| --------------- | -------------------- | ---------------------------------------------------- |
+| `--data_dir`    | *(required)*         | Path to the `data/` directory                        |
+| `--epochs`      | `15`                 | Number of training epochs                            |
+| `--batch_size`  | `32`                 | Batch size                                           |
+| `--lr`          | `1e-4`               | Learning rate (Adam)                                 |
+| `--out`         | `weights/model.pth`  | Where to save the best model weights                 |
+| `--val_size`    | `0.15`               | Fraction held out for validation                     |
+| `--num_workers` | `2`                  | DataLoader workers — **use `0` on Windows** if it hangs |
+| `--seed`        | `42`                 | Random seed; controls the split and all RNGs         |
+| `--smoke_test`  | off                  | Quick sanity run: 100 images, 1 epoch                |
+
+### What training produces
+
+Alongside the checkpoint, each run writes a `metrics.json` next to `--out`
+containing the per-epoch history, the confusion matrix, and the per-class
+report for the best epoch.
+
+The checkpoint is a dict — `state_dict` plus metadata (architecture, class
+names, image size, normalisation statistics, best epoch, kappa, seed) — so a
+weights file is self-describing rather than an anonymous blob. It contains only
+tensors and plain primitives, which lets the backend load it with
+`torch.load(..., weights_only=True)` instead of unpickling arbitrary objects.
 
 ---
 
@@ -128,19 +143,60 @@ files.download('model.pth')
 
 ---
 
-## Step 5: Deploy the Model
+## Step 5: Evaluate the Model
 
-Copy the trained `model.pth` into the backend so the web app can use it:
+`evaluate.py` rebuilds the **exact** validation split `train.py` used — same
+seed, same stratification — so the reported numbers are on genuinely held-out
+data:
+
+```bash
+python evaluate.py --data_dir data/ --weights ../backend/weights/model.pth --out_dir reports/
+```
+
+It reports:
+
+| Metric | Why it's here |
+| ------ | ------------- |
+| **Quadratic weighted kappa** | Primary metric. DR grades are ordinal, so errors are penalised by the square of the grade distance — and it's what the Kaggle competition scored. |
+| Accuracy | Reported for context only; it is misleading on data this imbalanced. |
+| Per-class precision / recall / F1 | Shows whether the rare severe grades are actually detected, or just absorbed into their neighbours. |
+| Confusion matrix | Where the errors land. Saved as JSON and as a PNG. |
+| Referable-DR sensitivity & specificity | Grades ≥ 2 collapsed against < 2 — the screening-relevant view a clinician would ask about. |
+
+Outputs land in `reports/`: `eval_metrics.json` and `confusion_matrix.png`.
+
+> Pass the same `--seed` and `--val_size` you trained with. Different values
+> rebuild a different split, and the model will have seen some of it.
+
+---
+
+## Step 6: Deploy the Model
+
+Copy the trained checkpoint into the backend so the web app picks it up on
+startup:
 
 ```bash
 cp model.pth ../backend/weights/model.pth
 ```
 
-The backend's `model.py` loads it with:
+The backend loads it in `backend/model.py`, accepting either a bare
+`state_dict` or the metadata dict this script writes:
 
 ```python
-model.load_state_dict(torch.load("weights/model.pth"))
+checkpoint = torch.load(WEIGHTS_PATH, map_location=DEVICE, weights_only=True)
+state_dict = checkpoint.get("state_dict", checkpoint)
+model.load_state_dict(state_dict)
 ```
+
+Restart the backend and check that the weights were found:
+
+```bash
+curl http://localhost:8000/health
+# {"status":"ok","model_loaded":true,"untrained":false,"device":"cpu"}
+```
+
+If `untrained` is still `true`, the file isn't where the backend expects it —
+set `RETINATRIAGE_WEIGHTS` to point at it explicitly.
 
 ---
 
