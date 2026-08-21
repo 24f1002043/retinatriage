@@ -2,7 +2,7 @@
 
 # RetinaTriage 
 
-**Explainable diabetic retinopathy screening — ResNet50 staging with Grad-CAM, served end to end.**
+**Explainable diabetic retinopathy screening - ResNet50 staging with Grad-CAM, served end to end.**
 
 [![CI](https://github.com/24f1002043/retinatriage/actions/workflows/ci.yml/badge.svg)](https://github.com/24f1002043/retinatriage/actions/workflows/ci.yml)
 [![Python 3.9+](https://img.shields.io/badge/python-3.9%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/)
@@ -14,7 +14,7 @@
 </div>
 
 > [!WARNING]
-> **Research and educational project — not a medical device.** Never validated on
+> **Research and educational project, not a medical device.** Never validated on
 > a clinical population, no regulatory clearance, and not for any diagnostic or
 > treatment decision. See the [Model Card](docs/MODEL_CARD.md) for the full
 > limitations, risks, and ethical considerations.
@@ -24,12 +24,12 @@
 ## What it does
 
 Diabetic retinopathy is the leading cause of preventable blindness in working-age
-adults, and it is diagnosed by grading retinal photographs — a task that needs a
+adults, and it is diagnosed by grading retinal photographs - a task that needs a
 trained ophthalmologist and doesn't scale to the population that needs screening.
 
 RetinaTriage takes a fundus photograph and returns **the DR grade (0–4), the full
 probability distribution across grades, and a Grad-CAM heatmap showing which
-retinal regions drove that grade** — because a screening prediction a clinician
+retinal regions drove that grade** , because a screening prediction a clinician
 can't interrogate is a prediction they can't act on.
 
 <div align="center">
@@ -60,10 +60,10 @@ can't interrogate is a prediction they can't act on.
 
 | | |
 | --- | --- |
-| **Ordinal-aware modelling** | DR grades are ordered, so the model is selected on **quadratic weighted kappa**, not accuracy — grading a stage-4 eye as stage 0 is penalised far more than grading it stage 3. Accuracy cannot see that difference; [a test asserts exactly this](tests/test_training.py). |
+| **Ordinal-aware modelling** | DR grades are ordered, so the model is selected on **quadratic weighted kappa**, not accuracy - grading a stage-4 eye as stage 0 is penalised far more than grading it stage 3. Accuracy cannot see that difference; [a test asserts exactly this](tests/test_training.py). |
 | **Handles severe class imbalance** | Grade 0 is ~half of APTOS-2019. Training uses **inverse-frequency weighted cross-entropy** so the rare sight-threatening grades aren't drowned out by the majority class. |
-| **Explainable by default** | Grad-CAM runs on *every* prediction, not as an optional extra — targeting `layer4`'s final bottleneck for the predicted class. |
-| **Honest about untrained state** | With no weights present the API still serves, but flags `untrained_warning` on every response and the UI shows a banner — a demo screenshot can never be mistaken for a real result. |
+| **Explainable by default** | Grad-CAM runs on *every* prediction, not as an optional extra - targeting `layer4`'s final bottleneck for the predicted class. |
+| **Honest about untrained state** | With no weights present the API still serves, but flags `untrained_warning` on every response and the UI shows a banner - a demo screenshot can never be mistaken for a real result. |
 | **Real-time REST inference** | FastAPI loads the model once at startup and reports per-request latency; the React client consumes it over a documented JSON contract. |
 | **Reproducible** | Seeded splits and RNGs; `evaluate.py` rebuilds the exact validation split from the seed and emits metrics as JSON plus a confusion-matrix PNG. |
 
@@ -98,7 +98,7 @@ flowchart LR
 ```
 
 The validation transform in `training/train.py` and the inference transform in
-`backend/model.py` **must** stay identical — a silent divergence would degrade
+`backend/model.py` **must** stay identical - a silent divergence would degrade
 every prediction without raising an error, so
 [a test enforces it](tests/test_training.py).
 
@@ -106,7 +106,7 @@ every prediction without raising an error, so
 
 ## Quick start
 
-### Option A — Docker (everything, one command)
+### Option A - Docker (everything, one command)
 
 ```bash
 docker compose up --build
@@ -115,7 +115,7 @@ docker compose up --build
 UI on <http://localhost:5173>, API on <http://localhost:8000>, interactive API
 docs on <http://localhost:8000/docs>.
 
-### Option B — Run locally
+### Option B - Run locally
 
 **Backend**
 
@@ -143,7 +143,7 @@ Then open <http://localhost:5173>.
 
 ## Training
 
-Full walkthrough — Kaggle dataset download, Colab GPU setup, all CLI flags — in
+Full walkthrough - Kaggle dataset download, Colab GPU setup, all CLI flags - in
 **[`training/README.md`](training/README.md)**.
 
 ```bash
@@ -169,7 +169,7 @@ python evaluate.py --data_dir data/ --weights ../backend/weights/model.pth --out
 ```
 
 Reports quadratic weighted kappa, per-class precision/recall/F1, the confusion
-matrix, and referable-DR sensitivity/specificity (grades ≥ 2 vs < 2) — the view
+matrix, and referable-DR sensitivity/specificity (grades ≥ 2 vs < 2) - the view
 closest to how a screening tool is actually judged. Writes
 `reports/eval_metrics.json` and `reports/confusion_matrix.png`.
 
@@ -199,21 +199,21 @@ Best epoch (14 of 15) on a held-out 440-image validation split, selected by kapp
 | Severe | 0.55 | 0.52 | 0.53 | 23 |
 | Proliferative DR | 0.80 | 0.80 | 0.80 | 35 |
 
-A headline kappa of 0.94 alongside a macro-F1 of 0.74 is not a contradiction —
+A headline kappa of 0.94 alongside a macro-F1 of 0.74 is not a contradiction ,
 it's the whole reason kappa is the metric here. The model is near-perfect on
 "No DR" and solid on the sight-threatening extremes, but genuinely weak on
 **Mild** and **Severe**, the two boundary grades that clinicians also disagree
 on most. Almost every error is off by a single grade, which quadratic weighting
 barely penalises; only 8 of 440 predictions are off by two or more.
 
-For screening, the number that matters is referable-DR **sensitivity: 0.9106** —
+For screening, the number that matters is referable-DR **sensitivity: 0.9106** -
 of the eyes that genuinely warranted referral, the model caught 91%. The
 remaining 9% are false negatives, and in a real deployment that, not accuracy,
 is what the decision threshold would be tuned against.
 
 > **How to read these numbers.** This is a seeded random split of the training
 > CSV, not the competition's held-out test set, so it is **not** comparable to
-> Kaggle leaderboard scores — a random split shares acquisition conditions with
+> Kaggle leaderboard scores , a random split shares acquisition conditions with
 > the training data and is a substantially easier target. APTOS is also known to
 > contain near-duplicate images, and the split is per-image rather than
 > per-patient, so some optimistic bias should be assumed. Reproduce with
@@ -292,7 +292,7 @@ pytest
 ```
 
 The API tests stub the ResNet50 backbone, so the suite runs in seconds with no
-GPU, no trained weights, and no ImageNet download — while still exercising the
+GPU, no trained weights, and no ImageNet download , while still exercising the
 real validation, preprocessing, and response path. They cover the response
 contract, the untrained-mode flag, every error status, and that internal error
 detail never leaks to the client. The training tests cover class weighting,
@@ -350,6 +350,6 @@ retinatriage/
 
 ## License
 
-MIT © Abhiram Radhakrishnan — see [LICENSE](LICENSE).
+MIT © Abhiram Radhakrishnan - see [LICENSE](LICENSE).
 
 For educational and research purposes only.
