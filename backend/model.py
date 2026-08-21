@@ -106,7 +106,7 @@ def get_model() -> tuple[nn.Module, bool]:
             )
     else:
         logger.warning(
-            "No trained weights at %s — running in UNTRAINED mode. "
+            "No trained weights at %s - running in UNTRAINED mode. "
             "Predictions are random and are only useful for verifying the "
             "pipeline end to end. See training/README.md to train a model.",
             WEIGHTS_PATH,
