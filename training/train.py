@@ -1,12 +1,12 @@
 """
-Training script for RetinaTriage — Diabetic Retinopathy classification.
+Training script for RetinaTriage: Diabetic Retinopathy classification.
 
 ResNet50 fine-tuned on the APTOS 2019 Blindness Detection dataset.
 5 classes: 0=No DR, 1=Mild, 2=Moderate, 3=Severe, 4=Proliferative DR
 
 The dataset is heavily imbalanced (roughly half of all images are class 0), so
 training uses inverse-frequency weighted cross-entropy, and the model is
-selected on quadratic weighted kappa rather than accuracy — kappa respects the
+selected on quadratic weighted kappa rather than accuracy; kappa respects the
 ordinal nature of DR grades (grading a stage-4 eye as stage 0 is far worse than
 grading it stage 3, and accuracy cannot see that difference).
 
@@ -77,7 +77,7 @@ def configure_console() -> None:
         try:
             stream.reconfigure(encoding="utf-8", errors="replace")
         except (AttributeError, OSError, ValueError):
-            # Not a reconfigurable text stream (e.g. redirected/captured) —
+            # Not a reconfigurable text stream (e.g. redirected/captured),
             # output is already being handled by something else.
             pass
 
@@ -221,7 +221,7 @@ def build_image_index(images_dir) -> dict:
     """Map every image's lowercased filename stem to its full path.
 
     Built once and searched recursively, so it copes with mirrors that nest
-    images in a subfolder, use unexpected extensions, or vary in letter case —
+    images in a subfolder, use unexpected extensions, or vary in letter case,
     none of which a fixed ``id_code + ".png"`` join would find.
     """
     index = {}
@@ -543,7 +543,7 @@ def main():
             "val_kappa": round(val_kappa, 4),
         })
 
-        # Select on kappa, not accuracy — DR grades are ordinal.
+        # Select on kappa, not accuracy: DR grades are ordinal.
         if val_kappa > best_kappa:
             best_kappa = val_kappa
             best_epoch = epoch

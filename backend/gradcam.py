@@ -1,5 +1,5 @@
 """
-gradcam.py — Grad-CAM heatmap generation for DR predictions.
+gradcam.py: Grad-CAM heatmap generation for DR predictions.
 
 Produces a base64-encoded PNG overlay highlighting the regions that most
 influenced the model's classification decision.
@@ -55,13 +55,13 @@ def generate_cam(
     output_size = _fit_within(original_pil.size, MAX_OVERLAY_EDGE)  # (W, H)
 
     # The last bottleneck block of layer4 is the deepest convolutional feature
-    # map — the standard Grad-CAM target for a ResNet.
+    # map, the standard Grad-CAM target for a ResNet.
     target_layers = [model.layer4[-1]]
 
     with GradCAM(model=model, target_layers=target_layers) as cam:
         targets = [ClassifierOutputTarget(target_class)]
         grayscale_cam = cam(input_tensor=input_tensor, targets=targets)  # (1, H, W)
-        grayscale_cam = grayscale_cam[0, :]  # (H, W) — single image
+        grayscale_cam = grayscale_cam[0, :]  # (H, W), single image
 
     # The base image for the overlay, as a float32 RGB array in [0, 1].
     rgb_img = original_pil.convert("RGB").resize((IMAGE_SIZE, IMAGE_SIZE))

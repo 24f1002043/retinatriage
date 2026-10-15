@@ -1,5 +1,5 @@
 """
-config.py — Environment-driven settings for the RetinaTriage API.
+config.py: Environment-driven settings for the RetinaTriage API.
 
 Every value has a sensible local-development default, so the app runs with
 zero configuration, but can be pointed at different weights/origins in

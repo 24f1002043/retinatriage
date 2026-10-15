@@ -1,4 +1,4 @@
-# Model Card — RetinaTriage DR Classifier
+# Model Card: RetinaTriage DR Classifier
 
 > **This model is not a medical device.** It is a student research and
 > engineering project. It has never been validated on a clinical population,
@@ -39,7 +39,7 @@ Model cards follow the format proposed in
 
 ## 2. Intended use
 
-**Intended:** demonstrating an end-to-end explainable medical-imaging pipeline —
+**Intended:** demonstrating an end-to-end explainable medical-imaging pipeline:
 training, evaluation on an ordinal metric, inference serving, and saliency-based
 explanation. Educational and portfolio use.
 
@@ -48,15 +48,15 @@ explanation. Educational and portfolio use.
 - Any clinical, diagnostic, screening, or triage decision about a real patient.
 - Use on image types the model never saw: OCT, fluorescein angiography,
   slit-lamp photography, smartphone fundus captures from unvalidated adapters.
-- Grading eyes with comorbid pathology (glaucoma, AMD, cataract) — the model has
+- Grading eyes with comorbid pathology (glaucoma, AMD, cataract); the model has
   no concept of these and will still emit a confident DR grade.
 
 ---
 
 ## 3. Training data
 
-[APTOS 2019 Blindness Detection](https://www.kaggle.com/competitions/aptos2019-blindness-detection)
-— fundus photographs collected by Aravind Eye Hospital in rural India, graded
+[APTOS 2019 Blindness Detection](https://www.kaggle.com/competitions/aptos2019-blindness-detection):
+fundus photographs collected by Aravind Eye Hospital in rural India, graded
 0–4 by trained clinicians. The full competition training set is 3,662 images.
 
 This checkpoint was trained on the
@@ -71,7 +71,7 @@ training portion was used: **2,930 images**, distributed as
 **Split:** that 2,930 was further divided 85 % train / 15 % validation (2,490 /
 440), stratified by grade and seeded at 42, so `evaluate.py` reproduces the
 identical split. The mirror's own validation and test partitions were left
-untouched — they remain available as a genuinely unseen evaluation set.
+untouched; they remain available as a genuinely unseen evaluation set.
 
 **Augmentation (train only):** horizontal and vertical flips, ±20° rotation,
 brightness/contrast/saturation jitter at 0.2.
@@ -93,7 +93,7 @@ brightness/contrast/saturation jitter at 0.2.
 
 ## 4. Evaluation
 
-**Primary metric: quadratic weighted kappa (QWK).** DR grades are *ordinal* —
+**Primary metric: quadratic weighted kappa (QWK).** DR grades are *ordinal*:
 grading a stage-4 eye as stage 3 is a much smaller error than grading it stage 0.
 Accuracy treats those two mistakes identically; QWK penalises by the square of
 the grade distance. It is also the metric the original Kaggle competition scored.
@@ -129,11 +129,11 @@ Checkpoint from epoch 14 of 15, selected on validation kappa. Validation set:
 
 | Grade | Precision | Recall | F1 | Support |
 | --- | --- | --- | --- | --- |
-| 0 — No DR | 0.98 | 0.98 | 0.98 | 216 |
-| 1 — Mild | 0.59 | 0.60 | 0.59 | 45 |
-| 2 — Moderate | 0.78 | 0.78 | 0.78 | 121 |
-| 3 — Severe | 0.55 | 0.52 | 0.53 | 23 |
-| 4 — Proliferative DR | 0.80 | 0.80 | 0.80 | 35 |
+| 0: No DR | 0.98 | 0.98 | 0.98 | 216 |
+| 1: Mild | 0.59 | 0.60 | 0.59 | 45 |
+| 2: Moderate | 0.78 | 0.78 | 0.78 | 121 |
+| 3: Severe | 0.55 | 0.52 | 0.53 | 23 |
+| 4: Proliferative DR | 0.80 | 0.80 | 0.80 | 35 |
 
 **Confusion matrix** (rows = true, columns = predicted)
 
@@ -167,7 +167,7 @@ Checkpoint from epoch 14 of 15, selected on validation kappa. Validation set:
 - **The failure mode that matters is the 9% of referable eyes missed.**
   Sensitivity 0.9106 means roughly 1 in 11 eyes needing referral was graded
   below the referral threshold. In a screening context, that is the number to
-  optimise, not accuracy — and the argmax decision rule used here is not tuned
+  optimise, not accuracy, and the argmax decision rule used here is not tuned
   for it.
 
 ---
@@ -178,7 +178,7 @@ Every prediction is returned with a **Grad-CAM** overlay
 ([Selvaraju et al., 2017](https://arxiv.org/abs/1610.02391)) computed on the
 final bottleneck block of `layer4`, targeting the predicted class.
 
-**How to read it — and how not to.** Grad-CAM shows which regions most increased
+**How to read it, and how not to.** Grad-CAM shows which regions most increased
 the score for the predicted grade. It is a coarse 7 × 7 map upsampled to image
 resolution, so it localises *approximately*. Critically, a plausible-looking
 heatmap is **not** evidence the prediction is correct: a model can attend to the

@@ -1,16 +1,16 @@
 """
-evaluate.py — Evaluate a trained RetinaTriage checkpoint on a held-out split.
+evaluate.py: Evaluate a trained RetinaTriage checkpoint on a held-out split.
 
 Reproduces the exact validation split used by ``train.py`` (same seed, same
 stratification) and reports the metrics that matter for an ordinal, imbalanced
 grading task:
 
-  * Quadratic weighted kappa (QWK) — the primary metric, and the one the
+  * Quadratic weighted kappa (QWK): the primary metric, and the one the
     original APTOS 2019 Kaggle competition scored on.
-  * Per-class precision / recall / F1 — reveals whether the rare severe grades
+  * Per-class precision / recall / F1: reveals whether the rare severe grades
     are actually being detected or just absorbed into neighbouring classes.
-  * Confusion matrix — saved as both JSON and a PNG for the README.
-  * Referable-DR sensitivity / specificity — the screening-relevant view, where
+  * Confusion matrix: saved as both JSON and a PNG for the README.
+  * Referable-DR sensitivity / specificity: the screening-relevant view, where
     grades 2-4 are the cases that need an ophthalmologist.
 
 Usage:
@@ -140,7 +140,7 @@ def save_confusion_matrix_png(cm: np.ndarray, out_path: Path) -> bool:
     try:
         import matplotlib
 
-        matplotlib.use("Agg")  # headless — works in CI and over SSH
+        matplotlib.use("Agg")  # headless, works in CI and over SSH
         import matplotlib.pyplot as plt
     except ImportError:
         print("matplotlib not installed; skipping the confusion-matrix PNG.")
@@ -157,7 +157,7 @@ def save_confusion_matrix_png(cm: np.ndarray, out_path: Path) -> bool:
     ax.set_yticks(range(NUM_CLASSES), labels=CLASS_NAMES)
     ax.set_xlabel("Predicted grade")
     ax.set_ylabel("True grade")
-    ax.set_title("RetinaTriage — validation confusion matrix\n(cell = count, shade = row %)")
+    ax.set_title("RetinaTriage: validation confusion matrix\n(cell = count, shade = row %)")
 
     for i in range(NUM_CLASSES):
         for j in range(NUM_CLASSES):

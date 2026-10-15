@@ -1,5 +1,5 @@
 """
-main.py — FastAPI application for RetinaTriage DR staging.
+main.py: FastAPI application for RetinaTriage DR staging.
 
 Endpoints:
     GET  /         → API metadata
@@ -37,7 +37,7 @@ _untrained = True
 
 
 # ---------------------------------------------------------------------------
-# Lifespan — load the model once, at startup, rather than per request
+# Lifespan: load the model once, at startup, rather than per request
 # ---------------------------------------------------------------------------
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -55,7 +55,7 @@ app = FastAPI(
     title="RetinaTriage API",
     description=(
         "Diabetic retinopathy staging (5 classes) with Grad-CAM explainability. "
-        "Research/demo use only — not a medical device."
+        "Research/demo use only, not a medical device."
     ),
     version="1.0.0",
     lifespan=lifespan,
@@ -75,13 +75,13 @@ app.add_middleware(
 # ---------------------------------------------------------------------------
 @app.get("/")
 async def root():
-    """Basic service metadata — handy for smoke-testing a deployment."""
+    """Basic service metadata, handy for smoke-testing a deployment."""
     return {
         "service": "RetinaTriage API",
         "version": app.version,
         "docs": "/docs",
         "classes": CLASS_NAMES,
-        "disclaimer": "Research/demo tool only — not for clinical or diagnostic use.",
+        "disclaimer": "Research/demo tool only, not for clinical or diagnostic use.",
     }
 
 

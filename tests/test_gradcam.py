@@ -88,7 +88,7 @@ def test_overlay_does_not_swap_the_red_and_blue_channels(tiny_model, input_tenso
 
     Both overlays here use the same model and input, so they share an identical
     heatmap and the only difference is the image beneath it. A red photograph
-    must therefore yield a redder overlay than a blue one — a comparison that
+    must therefore yield a redder overlay than a blue one, a comparison that
     inverts if the channels are swapped, whatever the colormap contributes.
     """
     import numpy as np

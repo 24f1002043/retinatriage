@@ -13,7 +13,7 @@ concurrency:
 
 jobs:
   backend:
-    name: Backend — lint & test
+    name: Backend (lint & test)
     runs-on: ubuntu-latest
 
     steps:
@@ -39,7 +39,7 @@ jobs:
         run: pytest
 
   frontend:
-    name: Frontend — lint & build
+    name: Frontend (lint & build)
     runs-on: ubuntu-latest
 
     defaults:

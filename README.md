@@ -41,7 +41,7 @@ can't interrogate is a prediction they can't act on.
 
 <div align="center">
   <img src="assets/images/02-upload-preview.png" alt="Fundus image graded as Stage 4 with 99.6% confidence" width="85%">
-  <br><em>A held-out grade-4 eye, correctly graded <strong>Stage 4 — Proliferative DR</strong>
+  <br><em>A held-out grade-4 eye, correctly graded <strong>Stage 4: Proliferative DR</strong>
   at 99.6% confidence in 667 ms.</em>
 </div>
 
@@ -272,7 +272,7 @@ unsupported type · `422` no file · `500` inference failure · `503` model stil
 
 ### Configuration
 
-All optional — every value has a working local default.
+All optional: every value has a working local default.
 
 | Variable | Default | Purpose |
 | --- | --- | --- |
@@ -344,7 +344,7 @@ retinatriage/
 
 ## Acknowledgements
 
-- [APTOS 2019 Blindness Detection](https://www.kaggle.com/competitions/aptos2019-blindness-detection) — Aravind Eye Hospital
+- [APTOS 2019 Blindness Detection](https://www.kaggle.com/competitions/aptos2019-blindness-detection): Aravind Eye Hospital
 - Selvaraju et al., [*Grad-CAM: Visual Explanations from Deep Networks via Gradient-based Localization*](https://arxiv.org/abs/1610.02391) (2017)
 - He et al., [*Deep Residual Learning for Image Recognition*](https://arxiv.org/abs/1512.03385) (2015)
 

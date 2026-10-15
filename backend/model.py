@@ -1,10 +1,10 @@
 """
-model.py — ResNet50 backbone for 5-class diabetic retinopathy staging.
+model.py: ResNet50 backbone for 5-class diabetic retinopathy staging.
 
 Classes: 0-No DR, 1-Mild, 2-Moderate, 3-Severe, 4-Proliferative DR
 
 The preprocessing pipeline here is the inference-time counterpart of the
-validation transform in ``training/train.py`` — the two MUST stay in sync or
+validation transform in ``training/train.py``; the two MUST stay in sync or
 predictions will silently degrade.
 """
 
@@ -26,7 +26,7 @@ NUM_CLASSES = 5
 CLASS_NAMES = ["No DR", "Mild", "Moderate", "Severe", "Proliferative DR"]
 IMAGE_SIZE = 224
 
-# ImageNet statistics — the backbone was pretrained with these.
+# ImageNet statistics: the backbone was pretrained with these.
 IMAGENET_MEAN = [0.485, 0.456, 0.406]
 IMAGENET_STD = [0.229, 0.224, 0.225]
 
@@ -35,7 +35,7 @@ DEVICE = torch.device(
 )
 
 # ---------------------------------------------------------------------------
-# Preprocessing — THIS MUST MATCH the validation transform in training/train.py
+# Preprocessing: THIS MUST MATCH the validation transform in training/train.py
 # ---------------------------------------------------------------------------
 _preprocess_transforms = transforms.Compose(
     [
@@ -78,7 +78,7 @@ def get_model() -> tuple[nn.Module, bool]:
 
     Returns:
         model:      ``nn.Module`` in eval mode, placed on ``DEVICE``.
-        untrained:  ``True`` when no trained weights were found — predictions
+        untrained:  ``True`` when no trained weights were found; predictions
                     are then random and useful only for pipeline testing.
     """
     model = build_model()

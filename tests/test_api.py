@@ -3,7 +3,7 @@ API contract tests for the RetinaTriage backend.
 
 These run against a stubbed ResNet50 (see conftest.py) so the whole suite
 finishes in seconds and needs no trained weights or GPU. The request path
-itself — validation, preprocessing, response shape — is exercised for real.
+itself (validation, preprocessing, response shape) is exercised for real.
 """
 
 import base64

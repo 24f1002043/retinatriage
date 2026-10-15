@@ -146,14 +146,14 @@ export default function App() {
       <main className="main-content">
         {/* ─── Disclaimer ─── */}
         <div className="banner banner-disclaimer">
-          ⚠️ Research/demo tool only — not a medical device, not for clinical or
+          ⚠️ Research/demo tool only, not a medical device, not for clinical or
           diagnostic use.
         </div>
 
         {/* ─── Untrained Warning ─── */}
         {showUntrainedWarning && (
           <div className="banner banner-untrained">
-            ⚠️ Model has no trained weights loaded — output is not meaningful.
+            ⚠️ Model has no trained weights loaded; output is not meaningful.
             See README for training instructions.
           </div>
         )}
@@ -213,7 +213,7 @@ export default function App() {
             <div className={`stage-card stage-${results.stage}`}>
               <p className="stage-label-small">Prediction</p>
               <div className={`stage-badge stage-${results.stage}`}>
-                Stage {results.stage} — {results.stage_label}
+                Stage {results.stage}: {results.stage_label}
               </div>
               <p className="stage-confidence">
                 Confidence:{' '}

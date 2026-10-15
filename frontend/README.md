@@ -1,4 +1,4 @@
-# RetinaTriage — Frontend
+# RetinaTriage: Frontend
 
 React (Vite) single-page UI for the RetinaTriage diabetic retinopathy screener.
 It uploads a fundus image to the FastAPI backend and renders the predicted DR

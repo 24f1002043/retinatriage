@@ -36,7 +36,7 @@ def test_class_weights_are_normalised_to_the_class_count():
 def test_absent_class_does_not_produce_infinite_weight():
     from train import compute_class_weights
 
-    # Grade 4 never appears — inverse frequency would divide by zero.
+    # Grade 4 never appears: inverse frequency would divide by zero.
     labels = np.array([0] * 10 + [1] * 5 + [2] * 3 + [3] * 2)
     weights = compute_class_weights(labels).numpy()
 

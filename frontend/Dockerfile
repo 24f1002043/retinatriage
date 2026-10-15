@@ -1,4 +1,4 @@
-# RetinaTriage UI — build with Vite, serve the static bundle with nginx.
+# RetinaTriage UI: build with Vite, serve the static bundle with nginx.
 
 # ---- Build stage ----------------------------------------------------------
 FROM node:22-alpine AS build

@@ -9,8 +9,8 @@ dataset (5 classes: No DR → Proliferative DR).
 ## Prerequisites
 
 - **Python 3.9+**
-- **NVIDIA GPU recommended** — training on CPU is very slow
-- **Kaggle account** — required to download the competition dataset
+- **NVIDIA GPU recommended**: training on CPU is very slow
+- **Kaggle account**: required to download the competition dataset
 
 ---
 
@@ -29,7 +29,7 @@ pip install -r requirements.txt
 
 1. Go to [kaggle.com](https://www.kaggle.com/) → click your profile icon → **Settings**
 2. Scroll to the **API** section → click **Create New API Token**
-3. This downloads a `kaggle.json` file — keep it safe
+3. This downloads a `kaggle.json` file; keep it safe
 
 ### 2a-alt. Or skip the competition entirely
 
@@ -41,7 +41,7 @@ kaggle datasets download -d mariaherrerot/aptos2019
 unzip aptos2019.zip -d data/
 ```
 
-Mirrors rename things — `train_1.csv` instead of `train.csv`, `train/` instead
+Mirrors rename things: `train_1.csv` instead of `train.csv`, `train/` instead
 of `train_images/`, JPEG instead of PNG, `image`/`level` column headers instead
 of `id_code`/`diagnosis`. `train.py` and `evaluate.py` detect all of those
 automatically. If a layout still isn't recognised, the error lists what is
@@ -112,7 +112,7 @@ python train.py --data_dir data/ --epochs 15 --batch_size 32 --lr 1e-4 --out ../
 python train.py --data_dir data/ --smoke_test --out ../backend/weights/model.pth
 ```
 
-This uses only 100 images for 1 epoch — takes under a minute on any machine.
+This uses only 100 images for 1 epoch and takes under a minute on any machine.
 
 ### All CLI arguments
 
@@ -126,7 +126,7 @@ This uses only 100 images for 1 epoch — takes under a minute on any machine.
 | `--lr`          | `1e-4`               | Learning rate (Adam)                                 |
 | `--out`         | `weights/model.pth`  | Where to save the best model weights                 |
 | `--val_size`    | `0.15`               | Fraction held out for validation                     |
-| `--num_workers` | `2`                  | DataLoader workers — **use `0` on Windows** if it hangs |
+| `--num_workers` | `2`                  | DataLoader workers: **use `0` on Windows** if it hangs |
 | `--seed`        | `42`                 | Random seed; controls the split and all RNGs         |
 | `--smoke_test`  | off                  | Quick sanity run: 100 images, 1 epoch                |
 
@@ -136,8 +136,8 @@ Alongside the checkpoint, each run writes a `metrics.json` next to `--out`
 containing the per-epoch history, the confusion matrix, and the per-class
 report for the best epoch.
 
-The checkpoint is a dict — `state_dict` plus metadata (architecture, class
-names, image size, normalisation statistics, best epoch, kappa, seed) — so a
+The checkpoint is a dict: `state_dict` plus metadata (architecture, class
+names, image size, normalisation statistics, best epoch, kappa, seed), so a
 weights file is self-describing rather than an anonymous blob. It contains only
 tensors and plain primitives, which lets the backend load it with
 `torch.load(..., weights_only=True)` instead of unpickling arbitrary objects.
@@ -177,8 +177,8 @@ files.download('model.pth')
 
 ## Step 5: Evaluate the Model
 
-`evaluate.py` rebuilds the **exact** validation split `train.py` used — same
-seed, same stratification — so the reported numbers are on genuinely held-out
+`evaluate.py` rebuilds the **exact** validation split `train.py` used, same
+seed, same stratification, so the reported numbers are on genuinely held-out
 data:
 
 ```bash
@@ -189,11 +189,11 @@ It reports:
 
 | Metric | Why it's here |
 | ------ | ------------- |
-| **Quadratic weighted kappa** | Primary metric. DR grades are ordinal, so errors are penalised by the square of the grade distance — and it's what the Kaggle competition scored. |
+| **Quadratic weighted kappa** | Primary metric. DR grades are ordinal, so errors are penalised by the square of the grade distance, and it's what the Kaggle competition scored. |
 | Accuracy | Reported for context only; it is misleading on data this imbalanced. |
 | Per-class precision / recall / F1 | Shows whether the rare severe grades are actually detected, or just absorbed into their neighbours. |
 | Confusion matrix | Where the errors land. Saved as JSON and as a PNG. |
-| Referable-DR sensitivity & specificity | Grades ≥ 2 collapsed against < 2 — the screening-relevant view a clinician would ask about. |
+| Referable-DR sensitivity & specificity | Grades ≥ 2 collapsed against < 2, the screening-relevant view a clinician would ask about. |
 
 Outputs land in `reports/`: `eval_metrics.json` and `confusion_matrix.png`.
 
@@ -227,7 +227,7 @@ curl http://localhost:8000/health
 # {"status":"ok","model_loaded":true,"untrained":false,"device":"cpu"}
 ```
 
-If `untrained` is still `true`, the file isn't where the backend expects it —
+If `untrained` is still `true`, the file isn't where the backend expects it;
 set `RETINATRIAGE_WEIGHTS` to point at it explicitly.
 
 ---
@@ -248,6 +248,6 @@ validation result rather than a leaderboard-comparable score. See the
 considerably less flattering than the headline kappa.
 
 > **Note:** Results vary with random seed and data shuffling.
-> The quadratic weighted kappa (QWK) is the primary metric — it accounts
+> The quadratic weighted kappa (QWK) is the primary metric; it accounts
 > for the ordinal nature of DR severity grades and is what the original
 > Kaggle competition used for scoring.
