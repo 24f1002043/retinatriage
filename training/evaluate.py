@@ -1,23 +1,3 @@
-"""
-evaluate.py: Evaluate a trained RetinaTriage checkpoint on a held-out split.
-
-Reproduces the exact validation split used by ``train.py`` (same seed, same
-stratification) and reports the metrics that matter for an ordinal, imbalanced
-grading task:
-
-  * Quadratic weighted kappa (QWK): the primary metric, and the one the
-    original APTOS 2019 Kaggle competition scored on.
-  * Per-class precision / recall / F1: reveals whether the rare severe grades
-    are actually being detected or just absorbed into neighbouring classes.
-  * Confusion matrix: saved as both JSON and a PNG for the README.
-  * Referable-DR sensitivity / specificity: the screening-relevant view, where
-    grades 2-4 are the cases that need an ophthalmologist.
-
-Usage:
-    python evaluate.py --data_dir data/ --weights ../backend/weights/model.pth
-    python evaluate.py --data_dir data/ --weights model.pth --out_dir reports/
-"""
-
 import argparse
 import json
 from pathlib import Path
@@ -50,16 +30,10 @@ from train import (
     val_transform,
 )
 
-# Grades 2-4 (Moderate and worse) are the ones that warrant referral.
 REFERABLE_THRESHOLD = 2
 
 
-# ---------------------------------------------------------------------------
-# Checkpoint loading
-# ---------------------------------------------------------------------------
-
 def load_checkpoint(weights_path: Path, device: torch.device) -> nn.Module:
-    """Build a ResNet50 and load either a bare state_dict or a metadata dict."""
     checkpoint = torch.load(weights_path, map_location=device, weights_only=True)
     state_dict = (
         checkpoint["state_dict"]
@@ -79,13 +53,8 @@ def load_checkpoint(weights_path: Path, device: torch.device) -> nn.Module:
     return model
 
 
-# ---------------------------------------------------------------------------
-# Inference
-# ---------------------------------------------------------------------------
-
 @torch.no_grad()
 def collect_predictions(model, loader, device):
-    """Return (preds, labels) over the whole loader."""
     all_preds, all_labels = [], []
 
     for images, labels in tqdm(loader, desc="Evaluating"):
@@ -99,16 +68,8 @@ def collect_predictions(model, loader, device):
     return np.array(all_preds), np.array(all_labels)
 
 
-# ---------------------------------------------------------------------------
-# Screening view: referable vs non-referable DR
-# ---------------------------------------------------------------------------
-
+# referable DR = grade 2 or higher
 def referable_metrics(labels: np.ndarray, preds: np.ndarray) -> dict:
-    """Collapse the 5 grades into referable / not, then report sens & spec.
-
-    This is the number a clinician would actually ask about: of the eyes that
-    genuinely need referral, how many did the model catch?
-    """
     true_referable = labels >= REFERABLE_THRESHOLD
     pred_referable = preds >= REFERABLE_THRESHOLD
 
@@ -131,22 +92,16 @@ def referable_metrics(labels: np.ndarray, preds: np.ndarray) -> dict:
     }
 
 
-# ---------------------------------------------------------------------------
-# Plotting
-# ---------------------------------------------------------------------------
-
 def save_confusion_matrix_png(cm: np.ndarray, out_path: Path) -> bool:
-    """Render the confusion matrix to a PNG. Returns False if matplotlib is absent."""
     try:
         import matplotlib
 
-        matplotlib.use("Agg")  # headless, works in CI and over SSH
+        matplotlib.use("Agg")
         import matplotlib.pyplot as plt
     except ImportError:
         print("matplotlib not installed; skipping the confusion-matrix PNG.")
         return False
 
-    # Row-normalise so the rare classes stay readable next to the huge class 0.
     row_sums = cm.sum(axis=1, keepdims=True)
     normalised = np.divide(cm, row_sums, out=np.zeros_like(cm, dtype=float), where=row_sums > 0)
 
@@ -175,10 +130,6 @@ def save_confusion_matrix_png(cm: np.ndarray, out_path: Path) -> bool:
     return True
 
 
-# ---------------------------------------------------------------------------
-# Main
-# ---------------------------------------------------------------------------
-
 def main():
     parser = argparse.ArgumentParser(description="Evaluate a RetinaTriage checkpoint")
     parser.add_argument("--data_dir", type=str, required=True,
@@ -205,9 +156,6 @@ def main():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Using device: {device}")
 
-    # ------------------------------------------------------------------
-    # Rebuild the exact validation split train.py used
-    # ------------------------------------------------------------------
     csv_path, images_dir = resolve_dataset(args.data_dir, args.csv, args.images_dir)
     df = normalise_columns(pd.read_csv(csv_path), csv_path)
     image_index = build_image_index(images_dir)
@@ -221,9 +169,6 @@ def main():
     val_loader = DataLoader(val_ds, batch_size=args.batch_size, shuffle=False,
                             num_workers=args.num_workers, pin_memory=True)
 
-    # ------------------------------------------------------------------
-    # Evaluate
-    # ------------------------------------------------------------------
     model = load_checkpoint(Path(args.weights), device)
     preds, labels = collect_predictions(model, val_loader, device)
 
@@ -239,9 +184,6 @@ def main():
     )
     referable = referable_metrics(labels, preds)
 
-    # ------------------------------------------------------------------
-    # Report
-    # ------------------------------------------------------------------
     print("\n" + "=" * 60)
     print("VALIDATION RESULTS")
     print("=" * 60)
@@ -264,9 +206,6 @@ def main():
     for i, row in enumerate(cm):
         print(f"  {i} {CLASS_NAMES[i][:9]:<9}" + "".join(f"{v:>8}" for v in row))
 
-    # ------------------------------------------------------------------
-    # Persist artifacts
-    # ------------------------------------------------------------------
     out_dir = Path(args.out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
 

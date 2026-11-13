@@ -1,11 +1,8 @@
-# RetinaTriage: Frontend
+# RetinaTriage Frontend
 
-React (Vite) single-page UI for the RetinaTriage diabetic retinopathy screener.
-It uploads a fundus image to the FastAPI backend and renders the predicted DR
-stage, the full class-probability distribution, and the Grad-CAM overlay
-side by side with the original image.
+React (Vite) UI for RetinaTriage. It uploads a fundus image to the FastAPI backend and shows the predicted DR stage, the class probabilities, and the Grad-CAM overlay next to the original image.
 
-See the [project README](../README.md) for the full stack and setup.
+See the [main README](../README.md) for the full setup.
 
 ## Run
 
@@ -14,30 +11,28 @@ npm install
 npm run dev      # http://localhost:5173
 ```
 
-The backend must be running (default `http://localhost:8000`) for analysis to
-work. To point at a different backend, copy `.env.example` to `.env` and set
-`VITE_API_BASE`.
+The backend needs to be running (default `http://localhost:8000`). To use a different backend, copy `.env.example` to `.env` and set `VITE_API_BASE`.
 
 ## Scripts
 
-| Command           | Description                          |
-| ----------------- | ------------------------------------ |
-| `npm run dev`     | Start the Vite dev server with HMR   |
-| `npm run build`   | Production build into `dist/`        |
-| `npm run preview` | Serve the production build locally   |
-| `npm run lint`    | Lint with Oxlint                     |
+| Command           | Description                    |
+| ----------------- | ------------------------------ |
+| `npm run dev`     | dev server with HMR            |
+| `npm run build`   | production build into `dist/`  |
+| `npm run preview` | serve the production build     |
+| `npm run lint`    | lint with Oxlint               |
 
 ## Structure
 
 ```
 src/
-├── App.jsx      # Upload, analysis, and results UI (single component tree)
-├── App.css      # Component styles
-├── index.css    # Global reset, fonts, dark theme base
-└── main.jsx     # React entry point
+├── App.jsx      upload, analysis and results UI
+├── App.css      component styles
+├── index.css    global styles and dark theme
+└── main.jsx     entry point
 ```
 
-## Backend contract
+## Backend response
 
 `POST {VITE_API_BASE}/predict` with `multipart/form-data` field `file`:
 
@@ -53,5 +48,4 @@ src/
 }
 ```
 
-`untrained_warning` is `true` when the backend has no trained weights loaded;
-the UI surfaces a banner so demo output is never mistaken for a real result.
+`untrained_warning` is `true` when the backend has no trained weights. The UI then shows a banner.

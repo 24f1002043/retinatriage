@@ -1,9 +1,5 @@
-/* ═══════════════════════════════════════════════
-   RetinaTriage: Premium Dark Clinical Theme
-   ═══════════════════════════════════════════════ */
 
 :root {
-  /* ─── Core Palette ─── */
   --bg-primary: #0a0f1a;
   --bg-secondary: #111827;
   --bg-card: rgba(17, 24, 39, 0.6);
@@ -15,20 +11,17 @@
   --text-secondary: #94a3b8;
   --text-muted: #64748b;
 
-  /* ─── Stage Colors ─── */
   --stage-0: #10b981;
   --stage-1: #f59e0b;
   --stage-2: #f97316;
   --stage-3: #ef4444;
   --stage-4: #dc2626;
 
-  /* ─── Accents ─── */
   --accent-primary: #6366f1;
   --accent-secondary: #818cf8;
   --accent-gradient: linear-gradient(135deg, #6366f1, #8b5cf6, #a78bfa);
   --accent-gradient-hover: linear-gradient(135deg, #818cf8, #a78bfa, #c4b5fd);
 
-  /* ─── Danger / Warning ─── */
   --danger-bg: rgba(239, 68, 68, 0.12);
   --danger-border: rgba(239, 68, 68, 0.3);
   --danger-text: #fca5a5;
@@ -36,21 +29,15 @@
   --warning-border: rgba(245, 158, 11, 0.3);
   --warning-text: #fcd34d;
 
-  /* ─── Spacing ─── */
   --radius-sm: 8px;
   --radius-md: 12px;
   --radius-lg: 16px;
   --radius-xl: 20px;
 
-  /* ─── Glass ─── */
   --glass-bg: rgba(255, 255, 255, 0.03);
   --glass-border: rgba(255, 255, 255, 0.08);
   --glass-blur: 20px;
 }
-
-/* ═══════════════════════════════════════════════
-   App Container
-   ═══════════════════════════════════════════════ */
 
 .app {
   min-height: 100vh;
@@ -60,10 +47,6 @@
     var(--bg-primary);
   padding-bottom: 4rem;
 }
-
-/* ═══════════════════════════════════════════════
-   Header
-   ═══════════════════════════════════════════════ */
 
 .header {
   text-align: center;
@@ -114,19 +97,11 @@
   letter-spacing: 0.02em;
 }
 
-/* ═══════════════════════════════════════════════
-   Main Content
-   ═══════════════════════════════════════════════ */
-
 .main-content {
   max-width: 860px;
   margin: 0 auto;
   padding: 0 1.5rem;
 }
-
-/* ═══════════════════════════════════════════════
-   Banners
-   ═══════════════════════════════════════════════ */
 
 .banner {
   padding: 0.875rem 1.25rem;
@@ -152,10 +127,6 @@
   border: 1px solid var(--warning-border);
   color: var(--warning-text);
 }
-
-/* ═══════════════════════════════════════════════
-   Upload Section
-   ═══════════════════════════════════════════════ */
 
 .upload-card {
   background: var(--glass-bg);
@@ -255,10 +226,6 @@
   word-break: break-all;
 }
 
-/* ═══════════════════════════════════════════════
-   Analyze Button
-   ═══════════════════════════════════════════════ */
-
 .analyze-btn {
   display: flex;
   align-items: center;
@@ -313,8 +280,6 @@
   z-index: 1;
 }
 
-/* ─── Spinner ─── */
-
 .spinner {
   width: 18px;
   height: 18px;
@@ -330,10 +295,6 @@
   to { transform: rotate(360deg); }
 }
 
-/* ═══════════════════════════════════════════════
-   Results Panel
-   ═══════════════════════════════════════════════ */
-
 .results-panel {
   animation: fadeInUp 0.5s ease;
 }
@@ -348,8 +309,6 @@
     transform: translateY(0);
   }
 }
-
-/* ─── Stage Badge ─── */
 
 .stage-card {
   background: var(--glass-bg);
@@ -418,8 +377,6 @@
   font-weight: 700;
 }
 
-/* ─── Probability Bars ─── */
-
 .probabilities-card {
   background: var(--glass-bg);
   border: 1px solid var(--glass-border);
@@ -486,8 +443,6 @@
   font-variant-numeric: tabular-nums;
 }
 
-/* ─── Image Comparison ─── */
-
 .comparison-card {
   background: var(--glass-bg);
   border: 1px solid var(--glass-border);
@@ -534,10 +489,6 @@
   font-style: italic;
 }
 
-/* ═══════════════════════════════════════════════
-   Toast Notification
-   ═══════════════════════════════════════════════ */
-
 .toast {
   position: fixed;
   top: 1.5rem;
@@ -583,10 +534,6 @@
     transform: translateX(40px);
   }
 }
-
-/* ═══════════════════════════════════════════════
-   Responsive
-   ═══════════════════════════════════════════════ */
 
 @media (max-width: 640px) {
   .header {

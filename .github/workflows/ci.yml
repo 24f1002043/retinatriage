@@ -28,7 +28,6 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          # CPU-only wheels: the CUDA build is several GB and CI has no GPU.
           pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu
           pip install -r backend/requirements.txt -r training/requirements.txt -r requirements-dev.txt
 

@@ -9,11 +9,9 @@ const STAGE_LABELS = [
   'Proliferative DR',
 ];
 
-/* Override with VITE_API_BASE in .env to point at a deployed backend. */
 const API_BASE = import.meta.env.VITE_API_BASE ?? 'http://localhost:8000';
 const API_URL = `${API_BASE}/predict`;
 
-/* ─── Toast Component ─── */
 function Toast({ message, onClose }) {
   const [exiting, setExiting] = useState(false);
 
@@ -33,7 +31,6 @@ function Toast({ message, onClose }) {
   );
 }
 
-/* ─── Main App ─── */
 export default function App() {
   const [selectedFile, setSelectedFile] = useState(null);
   const [preview, setPreview] = useState(null);
@@ -44,7 +41,6 @@ export default function App() {
   const [dragOver, setDragOver] = useState(false);
   const fileInputRef = useRef(null);
 
-  /* ─── File Handling ─── */
   const handleFile = useCallback((file) => {
     if (!file) return;
     if (!file.type.startsWith('image/')) {
@@ -81,7 +77,7 @@ export default function App() {
     [handleFile],
   );
 
-  /* ─── Analysis ─── */
+  // send the image to the backend and show the prediction
   const analyze = async () => {
     if (!selectedFile) return;
     setLoading(true);
@@ -121,7 +117,6 @@ export default function App() {
     }
   };
 
-  /* ─── Parse probabilities dict from backend into ordered array ─── */
   const probEntries = results
     ? STAGE_LABELS.map((label, idx) => ({
         label,
@@ -132,7 +127,6 @@ export default function App() {
 
   return (
     <div className="app">
-      {/* ─── Header ─── */}
       <header className="header">
         <span className="header-icon" role="img" aria-label="eye">
           👁️
@@ -144,13 +138,11 @@ export default function App() {
       </header>
 
       <main className="main-content">
-        {/* ─── Disclaimer ─── */}
         <div className="banner banner-disclaimer">
           ⚠️ Research/demo tool only, not a medical device, not for clinical or
           diagnostic use.
         </div>
 
-        {/* ─── Untrained Warning ─── */}
         {showUntrainedWarning && (
           <div className="banner banner-untrained">
             ⚠️ Model has no trained weights loaded; output is not meaningful.
@@ -158,7 +150,6 @@ export default function App() {
           </div>
         )}
 
-        {/* ─── Upload ─── */}
         <div className="upload-card">
           <div
             className={`dropzone ${dragOver ? 'drag-over' : ''} ${preview ? 'has-preview' : ''}`}
@@ -196,7 +187,6 @@ export default function App() {
           </div>
         </div>
 
-        {/* ─── Analyze Button ─── */}
         <button
           className="analyze-btn"
           onClick={analyze}
@@ -206,10 +196,8 @@ export default function App() {
           <span>{loading ? 'Analyzing…' : 'Analyze Image'}</span>
         </button>
 
-        {/* ─── Results ─── */}
         {results && (
           <div className="results-panel">
-            {/* Stage Badge */}
             <div className={`stage-card stage-${results.stage}`}>
               <p className="stage-label-small">Prediction</p>
               <div className={`stage-badge stage-${results.stage}`}>
@@ -228,7 +216,6 @@ export default function App() {
               </p>
             </div>
 
-            {/* Probability Bars */}
             <div className="probabilities-card">
               <p className="probabilities-title">Class Probabilities</p>
               {probEntries.map(({ label, idx, value }) => (
@@ -249,7 +236,6 @@ export default function App() {
               ))}
             </div>
 
-            {/* Image Comparison */}
             {results.heatmap && (
               <div className="comparison-card">
                 <div className="comparison-grid">
@@ -279,7 +265,6 @@ export default function App() {
         )}
       </main>
 
-      {/* ─── Error Toast ─── */}
       {error && <Toast message={error} onClose={() => setError(null)} />}
     </div>
   );

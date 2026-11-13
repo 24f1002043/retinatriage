@@ -1,12 +1,3 @@
-"""
-main.py: FastAPI application for RetinaTriage DR staging.
-
-Endpoints:
-    GET  /         → API metadata
-    GET  /health   → liveness + model status
-    POST /predict  → DR stage, confidence, probabilities, Grad-CAM heatmap
-"""
-
 import logging
 import time
 from contextlib import asynccontextmanager
@@ -29,16 +20,10 @@ logging.basicConfig(
 )
 logger = logging.getLogger("retinatriage")
 
-# ---------------------------------------------------------------------------
-# Globals set at startup
-# ---------------------------------------------------------------------------
 _model = None
 _untrained = True
 
 
-# ---------------------------------------------------------------------------
-# Lifespan: load the model once, at startup, rather than per request
-# ---------------------------------------------------------------------------
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     global _model, _untrained
@@ -48,9 +33,6 @@ async def lifespan(app: FastAPI):
     logger.info("RetinaTriage backend shutting down")
 
 
-# ---------------------------------------------------------------------------
-# App
-# ---------------------------------------------------------------------------
 app = FastAPI(
     title="RetinaTriage API",
     description=(
@@ -70,12 +52,8 @@ app.add_middleware(
 )
 
 
-# ---------------------------------------------------------------------------
-# Routes
-# ---------------------------------------------------------------------------
 @app.get("/")
 async def root():
-    """Basic service metadata, handy for smoke-testing a deployment."""
     return {
         "service": "RetinaTriage API",
         "version": app.version,
@@ -87,7 +65,6 @@ async def root():
 
 @app.get("/health")
 async def health():
-    """Liveness probe, plus whether real weights are actually loaded."""
     return {
         "status": "ok",
         "model_loaded": _model is not None,
@@ -96,16 +73,15 @@ async def health():
     }
 
 
+# returns grade, class probabilities and a Grad-CAM overlay
 @app.post("/predict")
 async def predict(file: UploadFile = File(...)):
-    """Accept a fundus image upload and return the DR stage + Grad-CAM overlay."""
     if _model is None:
         raise HTTPException(
             status_code=503,
             detail="Model is not loaded yet. Try again in a moment.",
         )
 
-    # --- Validate the upload before doing any expensive work ----------------
     if file.content_type and file.content_type.lower() not in ACCEPTED_IMAGE_TYPES:
         raise HTTPException(
             status_code=415,
@@ -124,7 +100,7 @@ async def predict(file: UploadFile = File(...)):
 
     try:
         pil_image = Image.open(BytesIO(contents))
-        pil_image.verify()  # cheap integrity check; consumes the file object
+        pil_image.verify()
         pil_image = Image.open(BytesIO(contents)).convert("RGB")
     except (UnidentifiedImageError, OSError, ValueError) as exc:
         raise HTTPException(
@@ -135,14 +111,13 @@ async def predict(file: UploadFile = File(...)):
             ),
         ) from exc
 
-    # --- Inference ----------------------------------------------------------
     started = time.perf_counter()
     try:
         input_tensor = preprocess(pil_image)
 
         with torch.no_grad():
-            logits = _model(input_tensor)  # (1, 5)
-            probs = F.softmax(logits, dim=1).squeeze(0)  # (5,)
+            logits = _model(input_tensor)
+            probs = F.softmax(logits, dim=1).squeeze(0)
 
         pred_class = int(probs.argmax().item())
         confidence = round(float(probs[pred_class].item()), 4)
@@ -150,10 +125,8 @@ async def predict(file: UploadFile = File(...)):
             name: round(float(probs[i].item()), 4) for i, name in enumerate(CLASS_NAMES)
         }
 
-        # Grad-CAM needs gradients, so it runs outside the no_grad block above.
         heatmap_b64 = generate_cam(_model, input_tensor, pred_class, pil_image)
     except Exception as exc:
-        # Log the traceback server-side; don't leak internals to the client.
         logger.exception("Prediction failed for upload %r", file.filename)
         raise HTTPException(
             status_code=500,
@@ -180,8 +153,5 @@ async def predict(file: UploadFile = File(...)):
     }
 
 
-# ---------------------------------------------------------------------------
-# Dev entry-point
-# ---------------------------------------------------------------------------
 if __name__ == "__main__":
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)

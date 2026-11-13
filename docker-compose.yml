@@ -1,9 +1,3 @@
-# One-command demo:  docker compose up --build
-#
-# Frontend on http://localhost:5173, API on http://localhost:8000.
-# Drop a trained model.pth into backend/weights/ before starting and the API
-# picks it up automatically; without one it runs in untrained demo mode and
-# flags every prediction as such.
 
 services:
   api:
@@ -12,12 +6,10 @@ services:
     ports:
       - "8000:8000"
     environment:
-      # The browser talks to the frontend's origin, so that's what CORS allows.
       RETINATRIAGE_ALLOWED_ORIGINS: http://localhost:5173
       RETINATRIAGE_FORCE_CPU: "1"
       RETINATRIAGE_MAX_UPLOAD_MB: "10"
     volumes:
-      # Mounted read-only so a retrained checkpoint needs no image rebuild.
       - ./backend/weights:/app/weights:ro
     restart: unless-stopped
 

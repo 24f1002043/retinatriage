@@ -2,7 +2,6 @@
 testpaths = ["tests"]
 addopts = "-q --strict-markers"
 filterwarnings = [
-    # torchvision emits these for the pretrained-weights enum on some versions.
     "ignore::UserWarning:torchvision.*",
 ]
 
@@ -25,10 +24,7 @@ ignore = [
 ]
 
 [tool.ruff.lint.isort]
-# backend/ and training/ are flat script directories, not installed packages,
-# so ruff needs to be told these module names are ours.
 known-first-party = ["config", "evaluate", "gradcam", "main", "model", "train"]
 
 [tool.ruff.lint.per-file-ignores]
-# Tests import inside functions on purpose, to keep sys.path setup in conftest.
 "tests/*" = ["E402"]
